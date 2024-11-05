@@ -349,7 +349,6 @@ def classify_albumentations(
         if augment:  # Resize and crop
             T = [A.RandomResizedCrop(height=size, width=size, scale=scale, ratio=ratio)]
             if auto_aug:
-                # TODO: implement AugMix, AutoAug & RandAug in albumentation
                 LOGGER.info(f"{prefix}auto augmentations are currently not supported")
             else:
                 if hflip > 0:
