@@ -1,7 +1,7 @@
 import cv2
 from aiohttp import web
 from Face_recognition.face_recognize import recognize_face
-from ID_detection.yolov5.ID_Detection import detect_id_card
+from ID_detection.yolov11.ID_Detection import detect_id_card
 
 async def video_feed(request):
     response = web.StreamResponse(
@@ -11,15 +11,21 @@ async def video_feed(request):
     )
     await response.prepare(request)
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(0)  # Access the default camera
+    if not cap.isOpened():
+        print("Error: Could not open video.")
+        return
+
     while True:
         success, frame = cap.read()
         if not success:
             break
 
+        # Apply ID card detection processing
+        modified_frame, bounding_boxes, associations = detect_id_card(frame)  # Ensure this returns correct values
+
         # Apply face recognition processing
-        modified_frame = detect_id_card(frame)
-        modified_frame = recognize_face(modified_frame)
+        modified_frame = recognize_face(modified_frame)  # Apply face recognition on the processed frame
 
         # Encode the frame as JPEG
         _, buffer = cv2.imencode('.jpg', modified_frame)

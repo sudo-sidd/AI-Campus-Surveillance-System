@@ -1,5 +1,8 @@
 import threading
 import time
+import os
+import json
+from datetime import datetime
 
 import cv2
 import numpy as np
@@ -13,11 +16,17 @@ from .face_recognition.arcface.model import iresnet_inference
 from .face_recognition.arcface.utils import compare_encodings, read_features
 from .face_tracking.tracker.byte_tracker import BYTETracker
 from .face_tracking.tracker.visualize import plot_tracking
+
+# from face_detection.yolov11.detector import YOLODetector
+
+
 # Device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Initialize your models and move them to GPU
 detector = SCRFD(model_file="Face_recognition/face_detection/scrfd/weights/scrfd_10g_bnkps.onnx")
+# detector = YOLODetector(model_path="face_detection/yolov11/models/best.pt")
+
 recognizer = iresnet_inference(
     model_name="r100", path="Face_recognition/face_recognition/arcface/weights/arcface_r100.pth", device=device
 )
@@ -124,22 +133,27 @@ def mapping_bbox(box1, box2):
     iou = intersection_area / union_area
     return iou
 
+# Global variable to track unknown faces
+unknown_faces_buffer = {}
+unknown_faces_counter = {}
+
 def recognize_face(frame):
+    global unknown_faces_buffer, unknown_faces_counter
+
+    # Load configuration
     file_name = "Face_recognition/face_tracking/config/config_tracking.yaml"
     config_tracking = load_config(file_name)
 
-    print("Loaded configuration:", config_tracking)
-
-    if 'track_thresh' not in config_tracking:
-        print("track_thresh not found in the configuration. Using default value.")
-    else:
-        track_thresh = config_tracking['track_thresh']
-
+    # Initialize tracker
     tracker = BYTETracker(args=config_tracking, frame_rate=30)
     frame_id = 0
     fps = 30
 
     modified_frame = process_tracking(frame, tracker, config_tracking, frame_id, fps)
+
+    current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    # Process each tracking box
     for i in range(len(data_mapping["tracking_bboxes"])):
         for j in range(len(data_mapping["detection_bboxes"])):
             mapping_score = mapping_bbox(box1=data_mapping["tracking_bboxes"][i],
@@ -147,26 +161,49 @@ def recognize_face(frame):
             if mapping_score > 0.9:
                 # Align and normalize face image for recognition
                 face_alignment = norm_crop(img=frame, landmark=data_mapping["detection_landmarks"][j])
-
-                # Perform face recognition
                 score, name = recognition(face_image=face_alignment)
 
-                # Set the caption to either recognized name or "UNKNOWN"
                 if name is not None and score >= 0.5:
-                    caption = f"{name}: {score:.2f}"
+                    caption = f"SIETian"
+                    color = (255, 0, 255)
                 else:
                     caption = "UNKNOWN"
+                    color = (0, 165, 255)
 
-                # Save the caption with the tracking ID
-                id_face_mapping[data_mapping["tracking_ids"][i]] = caption
+                    # Handle unknown face detection with a timer
+                    if i not in unknown_faces_counter:
+                        unknown_faces_counter[i] = time.time()
+                    elif time.time() - unknown_faces_counter[i] >= 5:  # Confirm after 3 seconds
+                        save_unknown_face(frame, current_time)
+                        del unknown_faces_counter[i]
 
                 x1, y1, x2, y2 = data_mapping["tracking_bboxes"][i]
-                cv2.rectangle(modified_frame, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 0),2)
-                cv2.putText(modified_frame, caption, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9,
-                            (255, 255, 255), 2)
+                cv2.rectangle(modified_frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
+                cv2.putText(modified_frame, caption, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                            0.9, (255, 255, 255), 2)
 
                 data_mapping["detection_bboxes"] = np.delete(data_mapping["detection_bboxes"], j, axis=0)
                 data_mapping["detection_landmarks"] = np.delete(data_mapping["detection_landmarks"], j, axis=0)
                 break
 
     return modified_frame
+
+def save_unknown_face(frame, timestamp):
+    camera_id = "Camera_1"  # Replace with actual camera ID if available
+    filename_base = f"../unknown_faces/frame_{timestamp.replace(':', '-')}.jpeg"
+
+    # Save frame
+    cv2.imwrite(filename_base, frame)
+
+    # Create JSON metadata
+    metadata = {
+        "timestamp": timestamp,
+        "camera_id": camera_id,
+        "frame": filename_base,
+    }
+
+    json_filename = filename_base.replace('.jpeg', '.json')
+
+    with open(json_filename, 'w') as json_file:
+        json.dump(metadata, json_file)
+

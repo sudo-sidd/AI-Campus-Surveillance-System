@@ -8,21 +8,25 @@ import yaml
 from torchvision import transforms
 
 from face_alignment.alignment import norm_crop
-from face_detection.scrfd.detector import SCRFD
+# from face_detection.scrfd.detector import SCRFD
+# import onnxruntime as ort
 from face_recognition.arcface.model import iresnet_inference
 from face_recognition.arcface.utils import compare_encodings, read_features
 from face_tracking.tracker.byte_tracker import BYTETracker
 from face_tracking.tracker.visualize import plot_tracking
+from face_detection.yolov11.detector import YOLODetector
 
-import onnxruntime as ort
+
+
+
 
 device = torch.device("cuda")
 
+# # detector = SCRFD(model_file="face_detection/scrfd/weights/scrfd_10g_bnkps.onnx")
 # detector = SCRFD(model_file="face_detection/scrfd/weights/scrfd_10g_bnkps.onnx")
-detector = SCRFD(model_file="face_detection/scrfd/weights/scrfd_10g_bnkps.onnx")
-detector.session = ort.InferenceSession("face_detection/scrfd/weights/scrfd_10g_bnkps.onnx",
-                                        providers=['CUDAExecutionProvider'])
-
+# detector.session = ort.InferenceSession("face_detection/scrfd/weights/scrfd_10g_bnkps.onnx",
+#                                         providers=['CUDAExecutionProvider'])
+detector = YOLODetector(model_path="face_detection/yolov11/models/best.pt")
 recognizer = iresnet_inference(
     model_name="r100", path="face_recognition/arcface/weights/arcface_r100.pth", device=device
 )
@@ -156,7 +160,7 @@ def tracking(detector, args):
     tracker = BYTETracker(args=args, frame_rate=30)
     frame_id = 0
 
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('/mnt/data/Projects/Label_ME/Screenrecorder-2024-11-12-10-39-58-745.mp4')
 
     while not stop_event.is_set():
         ret, img = cap.read()

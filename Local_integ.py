@@ -1,6 +1,7 @@
 import cv2
 from Face_recognition.face_recognize import recognize_face
-from ID_detection.yolov5.ID_Detection import detect_id_card
+from ID_detection.yolov11.ID_Detection import detect_id_card
+
 
 def video_feed():
     cap = cv2.VideoCapture(0)  # Access the default camera
@@ -14,11 +15,18 @@ def video_feed():
             print("Failed to capture image.")
             break
 
-        # Apply face recognition and ID card detection processing
-        modified_frame = detect_id_card(frame)
-        modified_frame = recognize_face(modified_frame)
+        # Apply ID card detection processing
+        modified_frame, bounding_boxes, associations = detect_id_card(frame)  # Ensure this returns the right values
 
-        # Display the frame
+        # Check if modified_frame is a valid image array
+        if isinstance(modified_frame, tuple):
+            print("Error: detect_id_card returned a tuple instead of an image.")
+            continue
+
+        # Apply face recognition processing
+        modified_frame = recognize_face(modified_frame)  # Apply face recognition on the processed frame
+
+        # Display the processed frame
         cv2.imshow('Video Feed', modified_frame)
 
         # Exit if 'q' is pressed
@@ -27,6 +35,7 @@ def video_feed():
 
     cap.release()
     cv2.destroyAllWindows()
+
 
 if __name__ == '__main__':
     video_feed()
