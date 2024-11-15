@@ -190,7 +190,7 @@ def recognize_face(frame):
 
 def save_unknown_face(frame, timestamp):
     camera_id = "Camera_1"  # Replace with actual camera ID if available
-    filename_base = f"../unknown_faces/frame_{timestamp.replace(':', '-')}.jpeg"
+    filename_base = f"unknown_faces/frame_{timestamp.replace(':', '-')}.jpeg"
 
     # Save frame
     cv2.imwrite(filename_base, frame)
