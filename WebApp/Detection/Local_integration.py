@@ -41,41 +41,43 @@ def process_and_save_detections(frame, person_boxes, flags, associations, camera
             id_card_type = None  # Default value if out of range
             wearing_id_card = False  # Default value
 
-        # Generate unique image name and save locally
-        image_name = f"person_{camera_id}_{current_time}_{idx}.jpg"
-        image_path = os.path.join("images", image_name)  # Ensure this directory exists
+        # Only save images of unknown persons or SIETIAN without ID card
+        if (flag.startswith("SIETIAN") and not wearing_id_card) or (flag == "UNKNOWN"):
+            # Generate unique image name and save locally
+            image_name = f"person_{camera_id}_{current_time}_{idx}.jpg"
+            image_path = os.path.join("images", image_name)  # Ensure this directory exists
 
-        try:
-            cv2.imwrite(image_path, person_image)  # Save image locally
+            try:
+                cv2.imwrite(image_path, person_image)  # Save image locally
 
-            # Prepare data for MongoDB based on recognition flags
-            if flag.startswith("SIETIAN"):  # Known face recognized as SIETIAN
-                person_name = flag.split(" ")[0]  # Extract name if needed (e.g., "SIETIAN (John Doe)")
-                role = "Student"  # Or get from your recognition system
-                recognition_status = "Recognized"
-            else:  # UNKNOWN or other statuses
-                person_name = "Unknown Person"
-                role = "Unidentified"
-                recognition_status = "Unknown"
+                # Prepare data for MongoDB based on recognition flags
+                if flag.startswith("SIETIAN"):  # Known face recognized as SIETIAN
+                    person_name = flag.split(" ")[0]  # Extract name if needed (e.g., "SIETIAN (John Doe)")
+                    role = "Student"  # Or get from your recognition system
+                    recognition_status = "Recognized"
+                else:  # UNKNOWN or other statuses
+                    person_name = "Unknown Person"
+                    role = "Unidentified"
+                    recognition_status = "Unknown"
 
-            # Create document to insert into MongoDB
-            document = {
-                "_id": ObjectId(),  # Generate a random ObjectId
-                "Reg_no": idx,  # You can modify this based on your requirements
-                "location": camera_id,
-                "time": datetime.now(),
-                "Role": role,
-                "Wearing_id_card": wearing_id_card,
-                "image": image_path,
-                "recognition_status": recognition_status,
-            }
+                # Create document to insert into MongoDB
+                document = {
+                    "_id": ObjectId(),  # Generate a random ObjectId
+                    "Reg_no": idx,  # You can modify this based on your requirements
+                    "location": camera_id,
+                    "time": datetime.now(),
+                    "Role": role,
+                    "Wearing_id_card": wearing_id_card,
+                    "image": image_path,
+                    "recognition_status": recognition_status,
+                }
 
-            # Insert document into MongoDB
-            result = collection.insert_one(document)
-            print(f"Document inserted with _id: {result.inserted_id}")
+                # Insert document into MongoDB
+                result = collection.insert_one(document)
+                print(f"Document inserted with _id: {result.inserted_id}")
 
-        except Exception as e:
-            print(f"Error saving detection data to database: {e}")
+            except Exception as e:
+                print(f"Error saving detection data to database: {e}")
 
 def video_feed(camera_id=0):
     """
