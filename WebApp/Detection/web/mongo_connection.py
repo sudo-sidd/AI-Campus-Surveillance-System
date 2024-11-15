@@ -11,3 +11,4 @@ def get_mongo_client():
 def get_database():
     client = get_mongo_client()
     return client['DetectionDB']
+
