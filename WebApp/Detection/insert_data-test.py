@@ -3,7 +3,7 @@ from bson.objectid import ObjectId
 from datetime import datetime, timezone
 
 def insert_document():
-    # Set up MongoDB client
+
     client = MongoClient('mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/')  # Replace with your MongoDB URI if different
     db = client['ML_project']  # Replace with your database name
     collection = db['DatabaseDB']  # Replace with your collection name

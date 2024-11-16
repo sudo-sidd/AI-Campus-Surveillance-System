@@ -7,7 +7,7 @@ from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 
-# Set up MongoDB client
+
 client = MongoClient('mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/')
 db = client['ML_project']  # Replace with your database name
 collection = db['DatabaseDB']  # Replace with your collection name

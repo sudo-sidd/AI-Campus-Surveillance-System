@@ -27,7 +27,7 @@ async def video_feed(request):
         # Apply face recognition processing
         modified_frame = recognize_face(modified_frame)  # Apply face recognition on the processed frame
 
-        # Encode the frame as JPEG
+
         _, buffer = cv2.imencode('.jpg', modified_frame)
         frame_bytes = buffer.tobytes()
 
