@@ -4,11 +4,12 @@ from django.conf import settings
 
 def get_mongo_client():
     client = MongoClient(
-        host='mongodb+srv://saidhinakar:PTDB123@ptdb.zlep9.mongodb.net/?retryWrites=true&w=majority&appName=PTDB'
-    )
+        host = 'mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/'
+        )  # Replace with your MongoDB URI if different
+
     return client
 
 def get_database():
     client = get_mongo_client()
-    return client['DetectionDB']
-
+    # collection = db['DatabaseDB']
+    return client['ML_project']
