@@ -13,7 +13,6 @@ import os
 # Get the base directory of the current script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-
 # Device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
