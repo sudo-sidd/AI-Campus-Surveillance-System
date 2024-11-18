@@ -1,14 +1,16 @@
 import cv2
 import time
 from ultralytics import YOLO
+
 import os
 
 # Get the base directory of the current script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-model_path = os.path.join(BASE_DIR, "models", "person+id", "best.pt")
-model = YOLO(model_path)   # Adjust this to the correct model path
+# Load the YOLO model with the trained weights (relative path)
+model_path = os.path.join(BASE_DIR,"models", "person+id", "best.pt")
 
+model = YOLO(model_path)
 # Define colors for different classes
 colors = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (120, 120, 0)]
 
