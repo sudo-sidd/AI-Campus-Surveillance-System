@@ -7,8 +7,7 @@ import json
 import os
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-import cv2
-
+import requests
 
 def my_view(request):
     db = get_database()
@@ -97,12 +96,20 @@ def camera_id(request):
 
 DATA_FILE_PATH = os.path.join(settings.BASE_DIR, 'data.json')
 
-# Load data from JSON file
 def load_data():
     if os.path.exists(DATA_FILE_PATH):
-        with open(DATA_FILE_PATH, 'r') as file:
-            return json.load(file)
-    return []
+        try:
+            with open(DATA_FILE_PATH, 'r') as file:
+                data = json.load(file)  # Load the JSON data
+                print(data)            # Debug: Print loaded data
+                return data            # Return loaded data
+        except json.JSONDecodeError:
+            print("Error: Failed to decode JSON from the file.")
+            return []
+    else:
+        print("Error: File does not exist.")
+        return []
+
 
 # Save data to JSON file
 def save_data(data):
@@ -144,80 +151,81 @@ def get_camera_ip(camera_id):
     return None
 
 
+def generate_video(camera_ip):
+    """
+    Generate video frames from the camera stream identified by camera_id.
+    """
+    # Fetch the camera IP from the JSON file
+    # camera_ip = get_camera_ip(camera_id)
+    
+    if not camera_ip:
+        print(f"Error: No camera found for camera_id {camera_id}.")
+        return
+
+    try:
+        # Access the camera stream
+        response = requests.get(f'{camera_ip}', stream=True)
+
+
+        if response.status_code == 200:
+            for chunk in response.iter_content(chunk_size=1024):
+                yield chunk
+        else:
+            print(f"Error: Failed to access video stream for IP {camera_ip}.")
+    except requests.RequestException as e:
+        print(f"Request failed for camera IP {camera_ip}: {e}")
+
+def video_feed(request, camera_id=0):
+    """
+    Django view to provide a live video stream.
+    """
+    ips = load_data()
+    camera_ip = ips[camera_id]['camera_ip']
+    return StreamingHttpResponse(
+            generate_video(camera_ip),
+            content_type='multipart/x-mixed-replace; boundary=frame'
+        )
+
+# import cv2
+# from django.http import StreamingHttpResponse
+
+
 # def generate_video(camera_id):
 #     """
-#     Generate video frames from the camera stream identified by camera_id.
+#     Generate video frames from a hardware camera identified by camera_id.
 #     """
-#     # Fetch the camera IP from the JSON file
-#     camera_ip = get_camera_ip(camera_id)
-    
-#     if not camera_ip:
-#         print(f"Error: No camera found for camera_id {camera_id}.")
+#     # Open the video stream using the camera ID (device index)
+#     cap = cv2.VideoCapture(camera_id)
+
+#     if not cap.isOpened():
+#         print(f"Error: Unable to access camera with ID {camera_id}.")
 #         return
 
-#     try:
-#         # Access the camera stream
-#         # response = requests.get(f'http://{camera_ip}/video_feed', stream=True)
+#     while True:
+#         ret, frame = cap.read()
+#         if not ret:
+#             print(f"Error: Failed to read frame from camera ID {camera_id}.")
+#             break
 
+#         # Encode the frame as JPEG
+#         ret, buffer = cv2.imencode('.jpg', frame)
+#         if not ret:
+#             print("Error: Failed to encode frame.")
+#             break
 
-#         if response.status_code == 200:
-#             for chunk in response.iter_content(chunk_size=1024):
-#                 yield chunk
-#         else:
-#             print(f"Error: Failed to access video stream for IP {camera_ip}.")
-#     except requests.RequestException as e:
-#         print(f"Request failed for camera IP {camera_ip}: {e}")
+#         # Yield the frame as a byte stream
+#         yield (b'--frame\r\n'
+#                b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
+
+#     cap.release()
 
 
 # def video_feed(request, camera_id=0):
 #     """
 #     Django view to provide a live video stream.
 #     """
+#     print("Video feed ", camera_id)
 #     return StreamingHttpResponse(
 #         generate_video(camera_id),
 #         content_type='multipart/x-mixed-replace; boundary=frame'
 #     )
-
-import cv2
-from django.http import StreamingHttpResponse
-
-
-def generate_video(camera_id):
-    """
-    Generate video frames from a hardware camera identified by camera_id.
-    """
-    # Open the video stream using the camera ID (device index)
-    cap = cv2.VideoCapture(camera_id)
-
-    if not cap.isOpened():
-        print(f"Error: Unable to access camera with ID {camera_id}.")
-        return
-
-    while True:
-        ret, frame = cap.read()
-        if not ret:
-            print(f"Error: Failed to read frame from camera ID {camera_id}.")
-            break
-
-        # Encode the frame as JPEG
-        ret, buffer = cv2.imencode('.jpg', frame)
-        if not ret:
-            print("Error: Failed to encode frame.")
-            break
-
-        # Yield the frame as a byte stream
-        yield (b'--frame\r\n'
-               b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
-    cap.release()
-
-
-def video_feed(request, camera_id=0):
-    """
-    Django view to provide a live video stream.
-    """
-    print("Video feed ", camera_id)
-    return StreamingHttpResponse(
-        generate_video(camera_id),
-        content_type='multipart/x-mixed-replace; boundary=frame'
-    )
