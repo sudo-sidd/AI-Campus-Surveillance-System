@@ -1,5 +1,4 @@
 import cv2
-
 username = "aiml"
 password = "Siet@2727"
 camera_ip = "192.168.3.148"

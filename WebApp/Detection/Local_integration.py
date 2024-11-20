@@ -6,6 +6,9 @@ import time
 from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Face_rec-ID_detection')))
 
 # Set up MongoDB client
 client = MongoClient('mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/')
@@ -90,6 +93,7 @@ def video_feed(camera_id=0):
 
     last_save_time = time.time()
     save_interval = 2.0  # Save every 2 seconds
+    frame_count = 0  # Counter to track frames
 
     while True:
         success, frame = cap.read()
@@ -97,26 +101,30 @@ def video_feed(camera_id=0):
             print("Failed to capture image.")
             break
 
-        # Get person boxes and ID card detections.
-        modified_frame, person_boxes, associations = detect_id_card(frame)
+        frame_count += 1
 
-        # Get face recognition results.
-        modified_frame, flags = recognize_face(modified_frame, person_boxes)
+        # Process only every 5th frame
+        if frame_count % 5 == 0:
+            # Get person boxes and ID card detections
+            modified_frame, person_boxes, associations = detect_id_card(frame)
 
-        # Save detections periodically.
-        current_time = time.time()
-        if current_time - last_save_time >= save_interval:
-            process_and_save_detections(
-                frame=frame,
-                person_boxes=person_boxes,
-                flags=flags,
-                associations=associations,
-                camera_id=camera_id
-            )
-            last_save_time = current_time
+            # Get face recognition results
+            modified_frame, flags = recognize_face(modified_frame, person_boxes)
 
-        # Display the processed frame.
-        cv2.imshow('Video Feed', modified_frame)
+            # Save detections periodically
+            current_time = time.time()
+            if current_time - last_save_time >= save_interval:
+                process_and_save_detections(
+                    frame=frame,
+                    person_boxes=person_boxes,
+                    flags=flags,
+                    associations=associations,
+                    camera_id=camera_id
+                )
+                last_save_time = current_time
+
+            # Display the processed frame
+            cv2.imshow('Video Feed', modified_frame)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
@@ -124,6 +132,16 @@ def video_feed(camera_id=0):
     cap.release()
     cv2.destroyAllWindows()
 
+# def frame_test(frame):
+#     modified_frame, person_boxes, associations = detect_id_card(frame)
+#
+#     # Get face recognition results
+#     modified_frame, flags = recognize_face(modified_frame, person_boxes)
+#     # Display the processed frame
+#     cv2.imshow('Test frame', modified_frame)
+
 if __name__ == '__main__':
     os.makedirs("images", exist_ok=True)  # Create directory for images if it doesn't exist
+    # frame = cv2.imread("/run/media/drackko/022df0a1-27b0-4c14-ad57-636776986ded/drackko/PycharmProjects/Face_rec-ID_detection/ML-A_testframe_unknown.jpg")
+    # frame_test(frame)
     video_feed()
