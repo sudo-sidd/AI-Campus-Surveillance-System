@@ -1,12 +1,12 @@
 import cv2
 
-username = "*****"
-password = "*****"
-camera_ip = "****"
-port = "****"  # Default RTSP port for Hikvision cameras
+username = "aiml"
+password = "Siet@2727"
+camera_ip = "192.168.3.148"
+port = "554"  # Default RTSP port for Hikvision cameras
 
 # Construct the RTSP URL
-rtsp_url = f"rtsp://{username}:{password}@{camera_ip}:{port}/Streaming/Channels/100"
+rtsp_url = f"rtsp://{username}:{password}@{camera_ip}:{port}/Streaming/Channels/101"
 # cap = cv2.VideoCapture(f"ffmpeg -rtsp_transport tcp -i {rtsp_url}", cv2.CAP_FFMPEG)
 
 cap = cv2.VideoCapture(rtsp_url)
