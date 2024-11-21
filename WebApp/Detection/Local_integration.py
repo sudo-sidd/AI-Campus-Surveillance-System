@@ -1,4 +1,4 @@
-from Face_recognition.face_recognize import recognize_face
+from Face_recognition.face_recognize_yolo import recognize_faces_in_persons
 from ID_detection.yolov11.ID_Detection import detect_id_card
 import os
 import cv2
@@ -7,80 +7,73 @@ from datetime import datetime
 from pymongo import MongoClient
 from bson.objectid import ObjectId
 import sys
+import numpy as np
+
+# Sensitive information as environment variables (better security practice)
+username = os.getenv("CAMERA_USERNAME", "aiml")
+password = os.getenv("CAMERA_PASSWORD", "Siet@2727")
+camera_ip = os.getenv("CAMERA_IP", "192.168.3.148")
+port = "554"  # Default RTSP port for Hikvision cameras
+
+# Construct the RTSP URL
+rtsp_url = f"rtsp://{username}:{password}@{camera_ip}:{port}/Streaming/Channels/101"
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Face_rec-ID_detection')))
 
-# Set up MongoDB client
-client = MongoClient('mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/')
-db = client['ML_project']  # Replace with your database name
-collection = db['DatabaseDB']  # Replace with your collection name
+# MongoDB connection
+try:
+    client = MongoClient(os.getenv("MONGO_URI", 'mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/'))
+    db = client['ML_project']  # Replace with your database name
+    collection = db['DatabaseDB']  # Replace with your collection name
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
+    sys.exit(1)  # Exit if database connection fails
 
-def process_and_save_detections(frame, person_boxes, flags, associations, camera_id):
+
+def process_and_save_detections(frame, person_bboxes, flags, associations, camera_id):
     """
-    Process detections and save to MongoDB.
-
-    Args:
-        frame: The video frame.
-        person_boxes: List of person bounding boxes.
-        flags: List of recognition flags ("SIETIAN", "UNKNOWN", or "_").
-        associations: ID card associations from detect_id_card.
-        camera_id: Identifier for the camera.
+    Process detections and save to MongoDB if abnormalities are detected.
     """
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
-    for idx, (person_box, flag) in enumerate(zip(person_boxes, flags)):
-        if flag == "_":  # Skip if no face detected
+    for idx, (person_box, flag) in enumerate(zip(person_bboxes, flags)):
+        if flag == "UNDETERMINED":  # Skip if no face detected
             continue
 
         # Extract person sub-image from frame
         x1, y1, x2, y2 = [int(coord) for coord in person_box]
         person_image = frame[y1:y2, x1:x2]
 
-        # Get ID card type from associations
-        if idx < len(associations):  # Check if index is valid
-            id_card_type = associations[idx]  # Use indexing instead of .get()
-            wearing_id_card = bool(id_card_type)
-        else:
-            id_card_type = None  # Default value if out of range
-            wearing_id_card = False  # Default value
+        # Determine ID card association
+        id_card_type = associations[idx] if idx < len(associations) else None
+        wearing_id_card = bool(id_card_type)
 
-        # Only save images of unknown persons or SIETIAN without ID card
-        if (flag.startswith("SIETIAN") and not wearing_id_card) or (flag == "UNKNOWN"):
-            # Generate unique image name and save locally
+        # Save data for specific conditions
+        if flag in ["UNKNOWN", "SIETIAN"] and not wearing_id_card:
             image_name = f"person_{camera_id}_{current_time}_{idx}.jpg"
-            image_path = os.path.join("images", image_name)  # Ensure this directory exists
+            image_path = os.path.join("images", image_name)
 
             try:
-                cv2.imwrite(image_path, person_image)  # Save image locally
+                os.makedirs("images", exist_ok=True)  # Ensure directory exists
+                cv2.imwrite(image_path, person_image)
 
-                # Prepare data for MongoDB based on recognition flags
-                if flag.startswith("SIETIAN"):  # Known face recognized as SIETIAN
-                    person_name = flag.split(" ")[0]  # Extract name if needed (e.g., "SIETIAN (John Doe)")
-                    role = "Student"  # Or get from your recognition system
-                    recognition_status = "Recognized"
-                else:  # UNKNOWN or other statuses
-                    person_name = "Unknown Person"
-                    role = "Unidentified"
-                    recognition_status = "Unknown"
-
-                # Create document to insert into MongoDB
                 document = {
-                    "_id": ObjectId(),  # Generate a random ObjectId
-                    "Reg_no": idx,  # You can modify this based on your requirements
+                    "_id": ObjectId(),
+                    "Reg_no": idx,
                     "location": camera_id,
                     "time": datetime.now(),
-                    "Role": role,
+                    "Role": "Unidentified" if flag == "UNKNOWN" else "Student",
                     "Wearing_id_card": wearing_id_card,
                     "image": image_path,
-                    "recognition_status": recognition_status,
+                    "recognition_status": "Unknown" if flag == "UNKNOWN" else "Recognized",
                 }
 
-                # Insert document into MongoDB
                 result = collection.insert_one(document)
                 print(f"Document inserted with _id: {result.inserted_id}")
 
             except Exception as e:
                 print(f"Error saving detection data to database: {e}")
+
 
 def video_feed(camera_id=0):
     """
@@ -92,56 +85,57 @@ def video_feed(camera_id=0):
         return
 
     last_save_time = time.time()
-    save_interval = 2.0  # Save every 2 seconds
-    frame_count = 0  # Counter to track frames
+    save_interval = 2.0  # Save interval in seconds
+    frame_count = 0
 
-    while True:
-        success, frame = cap.read()
-        if not success:
-            print("Failed to capture image.")
-            break
+    try:
+        while True:
+            success, frame = cap.read()
+            if not success:
+                print("Failed to capture image.")
+                break
 
-        frame_count += 1
+            frame_count += 1
 
-        # Process only every 5th frame
-        if frame_count % 5 == 0:
-            # Get person boxes and ID card detections
-            modified_frame, person_boxes, associations = detect_id_card(frame)
+            # Process every 5th frame
+            if frame_count % 5 == 0:
+                modified_frame, person_boxes, associations = detect_id_card(frame)
+                modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
 
-            # Get face recognition results
-            modified_frame, flags = recognize_face(modified_frame, person_boxes)
+                # Save detections periodically
+                if time.time() - last_save_time >= save_interval:
+                    process_and_save_detections(
+                        frame=frame,
+                        person_bboxes=person_boxes,
+                        flags=flags,
+                        associations=associations,
+                        camera_id=camera_id
+                    )
+                    last_save_time = time.time()
 
-            # Save detections periodically
-            current_time = time.time()
-            if current_time - last_save_time >= save_interval:
-                process_and_save_detections(
-                    frame=frame,
-                    person_boxes=person_boxes,
-                    flags=flags,
-                    associations=associations,
-                    camera_id=camera_id
-                )
-                last_save_time = current_time
+                # Display the processed frame
+                cv2.imshow('Video Feed', modified_frame)
 
-            # Display the processed frame
-            cv2.imshow('Video Feed', modified_frame)
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
+    except KeyboardInterrupt:
+        print("\nExiting video feed...")
 
-    cap.release()
-    cv2.destroyAllWindows()
+    finally:
+        cap.release()
+        cv2.destroyAllWindows()
+
 
 # def frame_test(frame):
+#     """
+#     Test frame processing for debugging.
+#     """
 #     modified_frame, person_boxes, associations = detect_id_card(frame)
-#
-#     # Get face recognition results
-#     modified_frame, flags = recognize_face(modified_frame, person_boxes)
-#     # Display the processed frame
-#     cv2.imshow('Test frame', modified_frame)
+#     modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
+#     cv2.imwrite('output_frame.jpg', modified_frame)
+
 
 if __name__ == '__main__':
     os.makedirs("images", exist_ok=True)  # Create directory for images if it doesn't exist
-    # frame = cv2.imread("/run/media/drackko/022df0a1-27b0-4c14-ad57-636776986ded/drackko/PycharmProjects/Face_rec-ID_detection/ML-A_testframe_unknown.jpg")
-    # frame_test(frame)
-    video_feed()
+    video_feed(0)
