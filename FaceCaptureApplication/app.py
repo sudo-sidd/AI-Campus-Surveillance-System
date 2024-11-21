@@ -1,12 +1,14 @@
 import os
 import cv2
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem, QMenuBar, QMenu, QAction, QInputDialog
-from PyQt5.QtGui import QImage, QPixmap, QFont, QIcon
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QLineEdit, QPushButton, QLabel, QMessageBox, QGraphicsView, QGraphicsScene, QGraphicsPixmapItem
+from PyQt5.QtGui import QImage, QPixmap, QFont
 from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtMultimedia import QSound  # Import QSound for sound playback
 
 
-class CaptureApp(QMainWindow):  # Subclass QMainWindow instead of QWidget
+
+class CaptureApp(QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -14,139 +16,93 @@ class CaptureApp(QMainWindow):  # Subclass QMainWindow instead of QWidget
         self.unique_id = None
         self.image_count = 0
         self.capture = None
-        self.capture_images = []
         self.camera_index = 0  # Default camera index
+        self.face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')  # Load face detector
+        self.capture_images = []
+        self.current_frame = None
+        self.sound_file = "Face_rec-ID_detection/FaceCaptureApplication/camera-shutter.wav"
+
+        # Instructions for each image capture
+        self.instructions = [
+            "Look directly at the camera",
+            "Turn your head 45° to the left",
+            "Turn your head 90° to the left",
+            "Turn your head 45° to the right",
+            "Turn your head 90° to the right",
+            "Slightly lower your head",
+            "Lower your head and turn 45° to the right",
+            "Lower your head and turn 45° to the left",
+            "Slightly raise your head"
+        ]
 
         # Basic Setup
         self.setWindowTitle("Face Image Capture")
-        self.setGeometry(100, 100, 800, 600)  # Set window size
+        self.setGeometry(100, 100, 800, 600)
         self.setStyleSheet("background-color: #ffffff; font-family: Arial; font-size: 12pt;")
 
         # Main Layout
         self.layout = QVBoxLayout()
+            # Initialize Login UI
+   
 
-        # Initialize Login UI
-        self.init_login_ui()
-
-        # Initialize Main UI (hidden initially)
-        self.init_main_ui()
+        self.init_ui()
 
         # Central Widget
         central_widget = QWidget()
         central_widget.setLayout(self.layout)
         self.setCentralWidget(central_widget)
+        
 
-    def init_login_ui(self):
-        """Set up the login screen UI"""
-        self.login_widget = QWidget()
-        self.login_layout = QVBoxLayout()
+ 
+    def init_ui(self):
+        """Set up the UI"""
+        self.label = QLabel("Enter Unique ID (12 digits):")
+        self.label.setFont(QFont("Arial", 14))
+        self.layout.addWidget(self.label)
 
-        # Title Label
-        self.login_label = QLabel("Admin Login")
-        self.login_label.setFont(QFont("Arial", 18, QFont.Bold))
-        self.login_label.setAlignment(Qt.AlignCenter)
-        self.login_label.setStyleSheet("color: #333; margin-bottom: 20px;")
-        self.login_layout.addWidget(self.login_label)
-
-        # Username Input
-        self.label_username = QLabel("Username:")
-        self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Enter username")
-        self.username_input.setStyleSheet("padding: 10px; margin-bottom: 10px; font-size: 14pt; border: 1px solid #ccc; border-radius: 5px;")
-
-        # Password Input
-        self.label_password = QLabel("Password:")
-        self.password_input = QLineEdit()
-        self.password_input.setEchoMode(QLineEdit.Password)
-        self.password_input.setPlaceholderText("Enter password")
-        self.password_input.setStyleSheet("padding: 10px; margin-bottom: 20px; font-size: 14pt; border: 1px solid #ccc; border-radius: 5px;")
-
-        # Login Button
-        self.submit_button = QPushButton("Login")
-        self.submit_button.setStyleSheet("background-color: #4CAF50; color: white; padding: 12px; border-radius: 5px; font-size: 14pt;")
-        self.submit_button.clicked.connect(self.on_login)
-
-        # Add widgets to layout
-        self.login_layout.addWidget(self.label_username)
-        self.login_layout.addWidget(self.username_input)
-        self.login_layout.addWidget(self.label_password)
-        self.login_layout.addWidget(self.password_input)
-        self.login_layout.addWidget(self.submit_button)
-
-        self.login_widget.setLayout(self.login_layout)
-        self.layout.addWidget(self.login_widget)
-
-    def init_main_ui(self):
-        """Set up the main UI screen (hidden initially)"""
-        self.main_ui_widget = QWidget()
-        self.main_ui_layout = QVBoxLayout()
-
-        # Main Screen Label
-        self.main_label = QLabel("Enter Unique ID (12 digits):")
-        self.main_label.setFont(QFont("Arial", 14))
-        self.main_ui_layout.addWidget(self.main_label)
-
-        # Unique ID Input
         self.text_input = QLineEdit()
         self.text_input.setMaxLength(12)
         self.text_input.setPlaceholderText("Unique ID (12 digits)")
         self.text_input.setStyleSheet("padding: 10px; font-size: 14pt; border: 1px solid #ccc; border-radius: 5px;")
-        self.main_ui_layout.addWidget(self.text_input)
+        self.layout.addWidget(self.text_input)
 
-        # Submit Button for ID
-        self.submit_button_main = QPushButton("Submit")
-        self.submit_button_main.setStyleSheet("background-color: #4CAF50; color: white; padding: 12px; border-radius: 5px; font-size: 14pt;")
-        self.submit_button_main.clicked.connect(self.on_submit)
-        self.main_ui_layout.addWidget(self.submit_button_main)
+        self.submit_button = QPushButton("Submit")
+        self.submit_button.setStyleSheet("background-color: #4CAF50; color: white; padding: 12px; border-radius: 5px; font-size: 14pt;")
+        self.submit_button.clicked.connect(self.on_submit)
+        self.layout.addWidget(self.submit_button)
 
-        # Graphics View for Video
         self.graphics_view = QGraphicsView(self)
         self.scene = QGraphicsScene(self)
         self.graphics_view.setScene(self.scene)
-        self.graphics_view.setFixedSize(640, 480)
+        self.graphics_view.setFixedSize(900, 500)
         self.graphics_view.setStyleSheet("background-color: #000; border: 2px solid #ccc; border-radius: 10px;")
-        self.main_ui_layout.addWidget(self.graphics_view)
+        self.layout.addWidget(self.graphics_view)
 
-        # Settings Menu
-        self.menu_bar = self.menuBar()  # Use self.menuBar() instead of setting it manually
-        self.settings_menu = QMenu("Settings", self.menu_bar)
-        self.change_camera_action = QAction(QIcon("icons/camera.png"), "Change Camera Index", self)
-        self.change_camera_action.triggered.connect(self.show_change_camera_dialog)
-        self.settings_menu.addAction(self.change_camera_action)
-        self.menu_bar.addMenu(self.settings_menu)
+        self.face_position_label = QLabel("Face Position Feedback: ")
+        self.face_position_label.setFont(QFont("Arial", 12))
+        self.face_position_label.setStyleSheet("padding: 5px; border: 1px solid #ccc;")
+        self.layout.addWidget(self.face_position_label)
 
-        # Set the main layout to the UI
-        self.main_ui_widget.setLayout(self.main_ui_layout)
+        # Revert Button
+        self.revert_button = QPushButton("Revert Last Capture")
+        self.revert_button.setStyleSheet("background-color: #f44336; color: white; padding: 12px; border-radius: 5px; font-size: 14pt;")
+        self.revert_button.clicked.connect(self.revert_capture)
+        self.layout.addWidget(self.revert_button)
 
-    def show_main_ui(self):
-        """Hide login UI and show main UI"""
-        self.login_widget.setVisible(False)
-        self.main_ui_widget.setVisible(True)
+    def keyPressEvent(self, event):
+        """Handle key press events for capturing, reverting, and other actions."""
+        if event.key() == Qt.Key_Shift and self.capture is not None and self.current_frame is not None:
+            # Right arrow key captures an image
+            self.revert_capture()
+        elif event.key() == Qt.Key_Apostrophe:
+            # Left arrow key reverts the last capture
+            self.revert_capture()
+        elif event.key() == Qt.Key_Return:  # Main Enter key
+            self.capture_image()
+        elif event.key() == Qt.Key_Enter:  # Numeric keypad Enter key
+           self.capture_image()
 
-        # Set the central widget
-        self.setCentralWidget(self.main_ui_widget)
 
-        # Set up camera
-        self.capture = cv2.VideoCapture(self.camera_index)
-        if not self.capture.isOpened():
-            self.show_error("Camera Error", "Unable to access the camera.")
-            return
-
-        # Start the video update loop
-        self.timer = QTimer(self)
-        self.timer.timeout.connect(self.update_frame)
-        self.timer.start(30)  # Update every 30 ms
-
-    def on_login(self):
-        """Handle login logic"""
-        username = self.username_input.text()
-        password = self.password_input.text()
-
-        if username == "admin" and password == "1234":
-            self.show_message("Login Successful", "Welcome to the Capture App!")
-            self.show_main_ui()
-        else:
-            self.show_error("Login Failed", "Invalid Username or Password")
 
     def on_submit(self):
         """Handle Unique ID submission"""
@@ -167,35 +123,25 @@ class CaptureApp(QMainWindow):  # Subclass QMainWindow instead of QWidget
 
         os.makedirs(folder_path)
         self.show_message("Folder Created", f"Folder for ID {self.unique_id} created. Ready to capture images.")
+        self.start_camera()
 
-        # Initialize image names
-        self.capture_images = [f"face_{i}.jpg" for i in range(1, 6)]  # Image names for 5 sides
-        self.capture_images_for_face()
+    def start_camera(self):
+        """Initialize camera and start capturing images"""
+        self.capture = cv2.VideoCapture(self.camera_index)
+        if not self.capture.isOpened():
+            self.show_error("Camera Error", "Unable to access the camera.")
+            return
 
-    def capture_images_for_face(self):
-        """Prompt user to position their face in front of the camera"""
-        self.show_message("Position your face", "Please position your face in front of the camera.")
-        self.capture_image()
+        self.capture_images = [f"face_{i}.jpg" for i in range(1, 10)]  # Image names for 9 captures
+        self.image_count = 0
+        self.update_feedback()
 
-    def capture_image(self):
-        """Capture and save an image"""
-        if self.capture is not None:
-            ret, frame = self.capture.read()
-            if ret:
-                image_path = f'./users/{self.unique_id}/{self.capture_images[self.image_count]}'
-                cv2.imwrite(image_path, frame)
-                self.image_count += 1
-                if self.image_count < 5:
-                    self.show_message("Next Position", f"Please position your face for side {self.image_count + 1}.")
-                    self.capture_image()
-                else:
-                    self.show_message("Capture Complete", "You have successfully captured all required images.")
-                    self.capture.release()
-                    self.capture = None
-                    self.timer.stop()
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self.update_frame)
+        self.timer.start(30)
 
     def update_frame(self):
-        """Update the live camera feed"""
+        """Update the live camera feed and detect faces"""
         if self.capture is not None:
             ret, frame = self.capture.read()
             if not ret:
@@ -207,11 +153,60 @@ class CaptureApp(QMainWindow):  # Subclass QMainWindow instead of QWidget
             image = QImage(frame_rgb.data, width, height, width * 3, QImage.Format_RGB888)
             pixmap = QPixmap(image)
 
-            if not hasattr(self, 'video_item'):
+            if not hasattr(self, 'video_item') or self.video_item is None:
                 self.video_item = QGraphicsPixmapItem(pixmap)
                 self.scene.addItem(self.video_item)
             else:
                 self.video_item.setPixmap(pixmap)
+
+            self.current_frame = frame  # Save current frame for capturing
+
+    def update_feedback(self):
+        """Update face position feedback"""
+        if self.image_count < len(self.instructions):
+            self.face_position_label.setText(f"Instruction: {self.instructions[self.image_count]}")
+        else:
+            self.face_position_label.setText("All images captured.")
+
+    def capture_image(self):
+        """Capture and save an image when the Enter key is pressed"""
+        if self.capture is not None and hasattr(self, 'current_frame'):
+            frame = self.current_frame
+            image_path = f'./users/{self.unique_id}/{self.capture_images[self.image_count]}'
+            cv2.imwrite(image_path, frame)
+            
+            # Play sound
+            QSound.play(self.sound_file)
+
+            self.image_count += 1
+            self.update_feedback()
+
+            if self.image_count == len(self.instructions):
+                self.show_message("Capture Complete", "You have successfully captured all images.")
+                self.reset_ui()
+
+    def revert_capture(self):
+        """Revert the last captured image"""
+        if self.image_count > 0:
+            self.image_count -= 1
+            image_path = f'./users/{self.unique_id}/{self.capture_images[self.image_count]}'
+            if os.path.exists(image_path):
+                os.remove(image_path)
+            self.update_feedback()
+            # self.show_message("Revert Successful", "Last capture has been reverted. You can capture again.")
+
+    def reset_ui(self):
+        """Reset the UI and release the camera"""
+        self.timer.stop()
+        if self.capture is not None:
+            self.capture.release()
+            self.capture = None
+
+        self.unique_id = None
+        self.text_input.clear()
+        self.scene.clear()
+        self.face_position_label.setText("Face Position Feedback: ")
+        self.video_item = None
 
     def show_error(self, title, message):
         """Show error message"""
@@ -230,13 +225,6 @@ class CaptureApp(QMainWindow):  # Subclass QMainWindow instead of QWidget
         msg.setText(message)
         msg.setStyleSheet("QMessageBox {font-family: Arial; font-size: 12pt;}")
         msg.exec_()
-
-    def show_change_camera_dialog(self):
-        """Change the camera index"""
-        camera_index, ok = QInputDialog.getInt(self, "Change Camera Index", "Enter Camera Index:", self.camera_index, 0, 10, 1)
-        if ok:
-            self.camera_index = camera_index
-            self.show_message("Camera Index Changed", f"Camera index is now set to {self.camera_index}.")
 
 
 if __name__ == '__main__':
