@@ -10,9 +10,9 @@ import sys
 import numpy as np
 
 # Sensitive information as environment variables (better security practice)
-username = os.getenv("CAMERA_USERNAME", "aiml")
-password = os.getenv("CAMERA_PASSWORD", "Siet@2727")
-camera_ip = os.getenv("CAMERA_IP", "192.168.3.148")
+username = os.getenv("CAMERA_USERNAME", "****")
+password = os.getenv("CAMERA_PASSWORD", "****")
+camera_ip = os.getenv("CAMERA_IP", "****")
 port = "554"  # Default RTSP port for Hikvision cameras
 
 # Construct the RTSP URL
