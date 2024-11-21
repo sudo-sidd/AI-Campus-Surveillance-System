@@ -197,10 +197,10 @@ def generate_frames(rtsp_url):
     """
     cap = cv2.VideoCapture(rtsp_url)  # Open the RTSP stream
     if not cap.isOpened():
-        # raise ValueError(f"Cannot open RTSP stream at {rtsp_url}")
         print(f"Cannot open RTSP stream at {rtsp_url}")
-        pass
+        raise ValueError(f"Cannot open RTSP stream at {rtsp_url}")
 
+    print(f"{rtsp_url} Stream opened")
     while True:
         success, frame = cap.read()
         if not success:
@@ -222,7 +222,7 @@ def live_stream(request, idx = 0):
     """
     data = load_data()
     rtsp_url = data[idx]["camera_ip"]
-    print(rtsp_url)
+    # print(rtsp_url)
     try:
         # rtsp_url = "rtsp://aiml:Siet@2727@192.168.3.143:554/Streaming/Channels/101"  # Replace with your actual RTSP URL
         return StreamingHttpResponse(
