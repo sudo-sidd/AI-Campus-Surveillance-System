@@ -13,7 +13,7 @@ import numpy as np
 username = os.getenv("CAMERA_USERNAME", "****")
 password = os.getenv("CAMERA_PASSWORD", "****")
 camera_ip = os.getenv("CAMERA_IP", "****")
-port = "554"  # Default RTSP port for Hikvision cameras
+port = "****"  # Default RTSP port for Hikvision cameras
 
 # Construct the RTSP URL
 rtsp_url = f"rtsp://{username}:{password}@{camera_ip}:{port}/Streaming/Channels/101"
