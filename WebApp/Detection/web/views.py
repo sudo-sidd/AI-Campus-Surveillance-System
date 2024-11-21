@@ -94,7 +94,8 @@ def camera_id(request):
     return render(request, 'camera_id.html')
 
 
-DATA_FILE_PATH = os.path.join(settings.BASE_DIR, 'data.json')
+# DATA_FILE_PATH = os.path.join(settings.BASE_DIR, 'data.json')
+DATA_FILE_PATH = os.path.join('./data.json')
 
 def load_data():
     if os.path.exists(DATA_FILE_PATH):
@@ -151,81 +152,83 @@ def get_camera_ip(camera_id):
     return None
 
 
-def generate_video(camera_ip):
-    """
-    Generate video frames from the camera stream identified by camera_id.
-    """
-    # Fetch the camera IP from the JSON file
-    # camera_ip = get_camera_ip(camera_id)
-    
-    if not camera_ip:
-        print(f"Error: No camera found for camera_id {camera_id}.")
-        return
-
-    try:
-        # Access the camera stream
-        response = requests.get(f'{camera_ip}', stream=True)
-
-
-        if response.status_code == 200:
-            for chunk in response.iter_content(chunk_size=1024):
-                yield chunk
-        else:
-            print(f"Error: Failed to access video stream for IP {camera_ip}.")
-    except requests.RequestException as e:
-        print(f"Request failed for camera IP {camera_ip}: {e}")
-
-def video_feed(request, camera_id=0):
-    """
-    Django view to provide a live video stream.
-    """
-    ips = load_data()
-    camera_ip = ips[camera_id]['camera_ip']
-    return StreamingHttpResponse(
-            generate_video(camera_ip),
-            content_type='multipart/x-mixed-replace; boundary=frame'
-        )
-
-# import cv2
-# from django.http import StreamingHttpResponse
-
-
-# def generate_video(camera_id):
+# def generate_video(camera_ip):
 #     """
-#     Generate video frames from a hardware camera identified by camera_id.
+#     Generate video frames from the camera stream identified by camera_id.
 #     """
-#     # Open the video stream using the camera ID (device index)
-#     cap = cv2.VideoCapture(camera_id)
-
-#     if not cap.isOpened():
-#         print(f"Error: Unable to access camera with ID {camera_id}.")
+#     # Fetch the camera IP from the JSON file
+#     # camera_ip = get_camera_ip(camera_id)
+#
+#     if not camera_ip:
+#         print(f"Error: No camera found for camera_id {camera_id}.")
 #         return
-
-#     while True:
-#         ret, frame = cap.read()
-#         if not ret:
-#             print(f"Error: Failed to read frame from camera ID {camera_id}.")
-#             break
-
-#         # Encode the frame as JPEG
-#         ret, buffer = cv2.imencode('.jpg', frame)
-#         if not ret:
-#             print("Error: Failed to encode frame.")
-#             break
-
-#         # Yield the frame as a byte stream
-#         yield (b'--frame\r\n'
-#                b'Content-Type: image/jpeg\r\n\r\n' + buffer.tobytes() + b'\r\n')
-
-#     cap.release()
-
-
+#
+#     try:
+#         # Access the camera stream
+#         response = requests.get(f'{camera_ip}', stream=True)
+#
+#
+#         if response.status_code == 200:
+#             for chunk in response.iter_content(chunk_size=1024):
+#                 yield chunk
+#         else:
+#             print(f"Error: Failed to access video stream for IP {camera_ip}.")
+#     except requests.RequestException as e:
+#         print(f"Request failed for camera IP {camera_ip}: {e}")
+#
 # def video_feed(request, camera_id=0):
 #     """
 #     Django view to provide a live video stream.
 #     """
-#     print("Video feed ", camera_id)
+#     ips = load_data()
+#     camera_ip = ips[camera_id]['camera_ip']
 #     return StreamingHttpResponse(
-#         generate_video(camera_id),
-#         content_type='multipart/x-mixed-replace; boundary=frame'
-#     )
+#             generate_video(camera_ip),
+#             content_type='multipart/x-mixed-replace; boundary=frame'
+#         )
+
+
+from django.http import StreamingHttpResponse, HttpResponse
+import cv2
+
+def generate_frames(rtsp_url):
+    """
+    A generator to fetch frames from the RTSP stream.
+    """
+    cap = cv2.VideoCapture(rtsp_url)  # Open the RTSP stream
+    if not cap.isOpened():
+        # raise ValueError(f"Cannot open RTSP stream at {rtsp_url}")
+        print(f"Cannot open RTSP stream at {rtsp_url}")
+        pass
+
+    while True:
+        success, frame = cap.read()
+        if not success:
+            break  # Exit the loop if no more frames are available
+        
+        # Encode the frame in JPEG format
+        _, buffer = cv2.imencode('.jpg', frame)
+        frame = buffer.tobytes()
+
+        # Yield the frame in the proper format for MJPEG
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+    cap.release()
+
+def live_stream(request, idx = 0):
+    """
+    Django view to stream the live video from an RTSP source.
+    """
+    data = load_data()
+    rtsp_url = data[idx]["camera_ip"]
+    print(rtsp_url)
+    try:
+        # rtsp_url = "rtsp://aiml:Siet@2727@192.168.3.143:554/Streaming/Channels/101"  # Replace with your actual RTSP URL
+        return StreamingHttpResponse(
+            generate_frames(rtsp_url),
+            content_type='multipart/x-mixed-replace; boundary=frame'
+        )
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return HttpResponse("An error occurred while streaming the video.", status=500)
