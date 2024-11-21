@@ -1,9 +1,9 @@
 import cv2
 
-username = "aiml"
-password = "Siet@2727"
-camera_ip = "192.168.3.143"
-port = "554"  # Default RTSP port for Hikvision cameras
+username = "*****"
+password = "*****"
+camera_ip = "****"
+port = "****"  # Default RTSP port for Hikvision cameras
 
 # Construct the RTSP URL
 rtsp_url = f"rtsp://{username}:{password}@{camera_ip}:{port}/Streaming/Channels/100"
