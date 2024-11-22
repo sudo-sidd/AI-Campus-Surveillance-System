@@ -98,7 +98,7 @@ def video_feed(camera_id=0):
             frame_count += 1
 
             # Process every 5th frame
-            if frame_count % 5 == 0:
+            if frame_count % 3 == 0:
                 modified_frame, person_boxes, associations = detect_id_card(frame)
                 modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
 
@@ -138,4 +138,4 @@ def video_feed(camera_id=0):
 
 if __name__ == '__main__':
     os.makedirs("images", exist_ok=True)  # Create directory for images if it doesn't exist
-    video_feed(rtsp_url)
+    video_feed(0)

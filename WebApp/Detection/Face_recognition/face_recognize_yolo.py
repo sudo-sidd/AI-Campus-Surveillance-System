@@ -8,13 +8,6 @@ from .face_recognition.arcface.utils import compare_encodings, read_features
 import os
 
 
-username = "aiml"
-password = "Siet@2727"
-camera_ip = "192.168.3.148"
-port = "554"  # Default RTSP port for Hikvision cameras
-
-# Construct the RTSP URL
-rtsp_url = f"rtsp://{username}:{password}@{camera_ip}:{port}/Streaming/Channels/101"
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
