@@ -10,6 +10,7 @@ import os
 
 
 
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Device configuration
@@ -141,7 +142,6 @@ def recognize_faces_in_persons(frame, person_bboxes):
             color,
             2,
         )
-
     return frame, states
 
 #

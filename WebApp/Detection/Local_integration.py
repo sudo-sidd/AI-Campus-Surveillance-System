@@ -1,4 +1,4 @@
-from Face_recognition.face_recognize_yolo import recognize_faces_in_persons
+from Face_recognition.face_recognize_yolo  import recognize_faces_in_persons
 from ID_detection.yolov11.ID_Detection import detect_id_card
 import os
 import cv2
@@ -127,15 +127,16 @@ def video_feed(camera_id=0):
         cv2.destroyAllWindows()
 
 
-# def frame_test(frame):
-#     """
-#     Test frame processing for debugging.
-#     """
-#     modified_frame, person_boxes, associations = detect_id_card(frame)
-#     modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
-#     cv2.imwrite('output_frame.jpg', modified_frame)
+def frame_test(frame):
+    """
+    Test frame processing for debugging.
+    """
+    modified_frame, person_boxes, associations = detect_id_card(frame)
+    modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
+    cv2.imwrite('output_frame.jpg', modified_frame)
 
 
 if __name__ == '__main__':
     os.makedirs("images", exist_ok=True)  # Create directory for images if it doesn't exist
-    video_feed(0)
+    video_feed()
+    # frame_test("/run/media/drackko/022df0a1-27b0-4c14-ad57-636776986ded/drackko/PycharmProjects/Face_rec-ID_detection/WebApp/Detection/Face_recognition/test.jpg")
