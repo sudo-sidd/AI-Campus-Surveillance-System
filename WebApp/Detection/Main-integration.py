@@ -1,46 +1,115 @@
-import cv2
-from aiohttp import web
-from Face_recognition.face_recognize import recognize_face
+from Face_recognition.face_recognize_yolo  import recognize_faces_in_persons
 from ID_detection.yolov11.ID_Detection import detect_id_card
+import os
+import cv2
+import time
+from datetime import datetime
+from pymongo import MongoClient
+from bson.objectid import ObjectId
+import sys
+import numpy as np
 
-async def video_feed(request):
-    response = web.StreamResponse(
-        status=200,
-        reason='OK',
-        headers={'Content-Type': 'multipart/x-mixed-replace; boundary=frame'}
-    )
-    await response.prepare(request)
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'Face_rec-ID_detection')))
 
-    cap = cv2.VideoCapture(0)  # Access the default camera
+# MongoDB connection
+try:
+    client = MongoClient(os.getenv("MONGO_URI", 'mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/'))
+    db = client['ML_project']  # Replace with your database name
+    collection = db['DatabaseDB']  # Replace with your collection name
+except Exception as e:
+    print(f"Error connecting to MongoDB: {e}")
+    sys.exit(1)  # Exit if database connection fails
+
+
+def process_and_save_detections(frame, person_bboxes, flags, associations, camera_id):
+    """
+    Process detections and save to MongoDB if abnormalities are detected.
+    """
+    current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+    for idx, (person_box, flag) in enumerate(zip(person_bboxes, flags)):
+        if flag == "UNDETERMINED":  # Skip if no face detected
+            continue
+
+        # Extract person sub-image from frame
+        x1, y1, x2, y2 = [int(coord) for coord in person_box]
+        person_image = frame[y1:y2, x1:x2]
+
+        # Determine ID card association
+        id_card_type = associations[idx] if idx < len(associations) else None
+        wearing_id_card = bool(id_card_type)
+
+        # Save data for specific conditions
+        if flag in ["UNKNOWN", "SIETIAN"] and not wearing_id_card:
+            image_name = f"person_{camera_id}_{current_time}_{idx}.jpg"
+            image_path = os.path.join("images", image_name)
+
+            try:
+                os.makedirs("images", exist_ok=True)  # Ensure directory exists
+                cv2.imwrite(image_path, person_image)
+
+                document = {
+                    "_id": ObjectId(),
+                    "Reg_no": idx,
+                    "location": camera_id,
+                    "time": datetime.now(),
+                    "Role": "Unidentified" if flag == "UNKNOWN" else "Student",
+                    "Wearing_id_card": wearing_id_card,
+                    "image": image_path,
+                    "recognition_status": "Unknown" if flag == "UNKNOWN" else "Recognized",
+                }
+
+                result = collection.insert_one(document)
+                print(f"Document inserted with _id: {result.inserted_id}")
+
+            except Exception as e:
+                print(f"Error saving detection data to database: {e}")
+
+
+def video_feed(camera_id):
+    """
+    Main video processing loop.
+    """
+    cap = cv2.VideoCapture(camera_id)
     if not cap.isOpened():
         print("Error: Could not open video.")
         return
 
-    while True:
-        success, frame = cap.read()
-        if not success:
-            break
+    last_save_time = time.time()
+    save_interval = 2.0  # Save interval in seconds
+    frame_count = 0
 
-        # Apply ID card detection processing
-        modified_frame, bounding_boxes, associations = detect_id_card(frame)  # Ensure this returns correct values
+    try:
+        while True:
+            success, frame = cap.read()
+            if not success:
+                print("Failed to capture image.")
+                break
 
-        # Apply face recognition processing
-        modified_frame = recognize_face(modified_frame)  # Apply face recognition on the processed frame
+            frame_count += 1
+
+            # Process every 5th frame
+            if frame_count % 3 == 0:
+                modified_frame, person_boxes, associations = detect_id_card(frame)
+                modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
+
+                # Save detections periodically
+                if time.time() - last_save_time >= save_interval:
+                    process_and_save_detections(
+                        frame=frame,
+                        person_bboxes=person_boxes,
+                        flags=flags,
+                        associations=associations,
+                        camera_id=camera_id
+                    )
+                    last_save_time = time.time()
+
+                # Display the processed frame
+
+            if cv2.waitKey(1) & 0xFF == ord('q'):
+                break
+
+    finally:
+        cap.release()
 
 
-        _, buffer = cv2.imencode('.jpg', modified_frame)
-        frame_bytes = buffer.tobytes()
-
-        # Write the frame to the response
-        await response.write(b'--frame\r\n'
-                             b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
-
-    await response.write_eof()
-    cap.release()
-    return response
-
-app = web.Application()
-app.router.add_get('/video_feed', video_feed)
-
-if __name__ == '__main__':
-    web.run_app(app, host='0.0.0.0', port=5000)
