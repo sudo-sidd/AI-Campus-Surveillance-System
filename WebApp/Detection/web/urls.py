@@ -9,6 +9,5 @@ urlpatterns = [
     path('get-data/', views.get_data, name='get_data'),
     path('save-data/', views.save_data_view, name='save_data'),
     path('delete-data/<int:index>/', views.delete_data, name='delete_data'),
-    # path('video_feed/<int:camera_id>/', views.video_feed, name='video_feed'),
     path('live_stream/<int:idx>',views.live_stream, name="live_stream"),
-]   
+    path('video/', video_feed, name='video_feed'),]

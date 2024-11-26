@@ -16,7 +16,7 @@ window.onload = function() {
             // Dynamically load video stream from backend for each camera
             cameraDiv.innerHTML = `
                 <div class="card" style='width: 350px; height: 180px;'>
-                    <img id="video${cameraId}" class="card-img-top" src="/live_stream/${cameraId}" alt="Camera ${cameraId} Live Feed" style="height: 180px;">
+                    <img id="video${cameraId}" class="card-img-top" src="/video_feed_view/${cameraId}" alt="Camera ${cameraId} Live Feed" style="height: 180px;">
                     <div class="card-body text-center">
                         <p class="card-text">Camera ${cameraId}</p>
                     </div>
@@ -44,7 +44,7 @@ function openCamera(cameraId) {
 
     // Use image tag to display full-screen live stream in the modal
     modalContent.innerHTML = `
-        <img id="video${cameraId}-fullscreen" class="img-fluid" src="/live_stream/${cameraId}" alt="Camera ${cameraId} Live Feed">
+        <img id="video${cameraId}-fullscreen" class="img-fluid" src="/video_feed_view/${cameraId}" alt="Camera ${cameraId} Live Feed">
     `;
 
     // Show the Bootstrap modal
