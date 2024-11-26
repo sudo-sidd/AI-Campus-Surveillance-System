@@ -1,0 +1,164 @@
+/* Global styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
+}
+
+body {
+    background-color: #f8f9fa;
+    color: #343a40;
+}
+
+.container {
+    max-width: 100%;
+    padding: 0;
+}
+
+/* Header Styles */
+header {
+    background-color: #FFFAC3;
+    color: #4CAF50;
+    padding: 20px;
+    text-align: center;
+}
+
+h1 {
+    font-size: 2.5rem;
+}
+
+/* Main Content Padding */
+main {
+    padding: 20px 0;
+}
+
+/* Button Styles */
+.button {
+    background-color: #13980e;
+    color: white;
+    padding: 10px 30px;
+    text-decoration: none;
+    font-size: 1.1rem;
+    border-radius: 5px;
+    margin: 0 20px;
+    display: inline-block;
+    transition: background-color 0.3s ease;
+}
+
+.detection-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.detection-table th, .detection-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: center;
+}
+
+.detection-table th {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.detection-table td img {
+    width: 100px;
+    height: auto;
+    border-radius: 5px;
+}
+
+
+.button:hover {
+    background-color: #1e7422;
+}
+
+/* Links Section at Bottom */
+.links {
+    position: fixed; /* Fixed at bottom */
+    bottom: 0; /* Place at the bottom */
+    left: 0;
+    width: 100%; /* Full width of the page */
+    background-color: #FFFAC3; /* Ensure background is solid and visible */
+    padding: 15px;
+    box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center; /* Center the links */
+    z-index: 100; /* Ensure it's above scrollable content */
+}
+
+/* Detection Section */
+.detection-section h2 {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* Detection Grid for Outsiders and ID holders */
+.detection-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* Two columns for larger screens */
+    gap: 20px;
+    padding: 0 20px;
+}
+
+.detection-item {
+    display: flex;
+    background-color: white;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    transition: all 0.3s ease; /* For hover effects */
+}
+
+.detection-item:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.detection-image {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+}
+
+.detection-info {
+    padding: 10px;
+    flex: 1;
+}
+
+.detection-info p {
+    font-size: 1rem;
+    margin-bottom: 5px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .detection-grid {
+        grid-template-columns: 1fr; /* One column layout on smaller screens */
+    }
+
+    .detection-item {
+        flex-direction: column; /* Stack the image and details vertically */
+        align-items: center;
+    }
+
+    .detection-image {
+        width: 100%;
+        height: auto; /* Adjust image height to fit content */
+    }
+}
+
+/* Footer */
+footer {
+    position: fixed; /* Fixed at bottom */
+    bottom: 0; /* Place at the bottom */
+    left: 0;
+    width: 100%; /* Full width of the page */
+    background-color: #f8f9fa; /* Ensure background is solid and visible */
+    padding: 15px;
+    box-shadow: 0 -4px 8px rgba(0, 0, 0, 0.1);
+    background-color: #343a40;
+    color: white;
+    padding: 20px;
+    text-align: center;
+}
