@@ -44,7 +44,7 @@ def load_data():
     return cached_data
 
 # Load camera data
-camera_data = [{'camera_ip': 0}]  # Adjust for your actual camera IP or path
+camera_data = [{'camera_ip': 0,'camera_location':'lh_32'}]  # Adjust for your actual camera IP or path
 
 # A dictionary to store frames for each camera
 current_frames = {}
@@ -70,7 +70,7 @@ for index, camera in enumerate(camera_data):
     threading.Thread(target=capture_frame, args=(index, camera["camera_ip"]), daemon=True).start()
 
 # Function to process and save detections to MongoDB
-def process_and_save_detections(frame, person_bboxes, flags, associations, camera_id):
+def process_and_save_detections(frame, person_bboxes, flags, associations, camrea_location):
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     for idx, (person_box, flag) in enumerate(zip(person_bboxes, flags)):
@@ -87,7 +87,7 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
 
         # Save data for specific conditions
         if flag in ["UNKNOWN", "SIETIAN"] and not wearing_id_card:
-            image_name = f"person_{camera_id}_{current_time}_{idx}.jpg"
+            image_name = f"person_{camrea_location}_{current_time}_{idx}.jpg"
             image_path = os.path.join("images", image_name)
 
             try:
@@ -97,9 +97,9 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
                 document = {
                     "_id": ObjectId(),
                     "Reg_no": idx,
-                    "location": camera_id,
-                    "time": datetime.now(),
-                    "Role": "Unidentified" if flag == "UNKNOWN" else "Student",
+                    "location": camrea_location,
+                    "time": current_time,
+                    "Role": "Unidentified" if flag == "UNKNOWN" else "Insider",
                     "Wearing_id_card": wearing_id_card,
                     "image": image_path,
                     "recognition_status": "Unknown" if flag == "UNKNOWN" else "Recognized",
@@ -132,7 +132,7 @@ async def video_feed(websocket: WebSocket, camera_id: int):
                 person_bboxes=person_boxes,
                 flags=flags,
                 associations=associations,
-                camera_id=camera_id
+                camera_id=current_frames[camera_id['camera_location']]
             )
 
             # Send the modified frame to the client as base64

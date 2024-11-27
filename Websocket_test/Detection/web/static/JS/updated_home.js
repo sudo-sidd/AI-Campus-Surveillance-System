@@ -53,7 +53,7 @@ window.onload = function() {
 
     // Open WebSocket connection for camera and update the feed
     function openCameraFeed(camera, index) {
-        const socket = new WebSocket(`ws://192.168.137.91:7000/ws/video/${index}/`);  // FastAPI WebSocket endpoint
+        const socket = new WebSocket(`ws://192.168.143.86:7000/ws/video/${index}/`);  // FastAPI WebSocket endpoint
 
         socket.onopen = function() {
             console.log(`Connected to WebSocket for Camera ${index}`);

@@ -69,7 +69,7 @@ def detection_view(request):
             role = document.get('role', '').lower()  # Ensure role field is processed in lowercase
 
             # Categorize by role and ID card status
-            if role == 'outsider':
+            if role == 'outsider' or 'unidentified':
                 outsiders.append(document)
             elif not document.get('wearing_id_card', False):  # Check ID card status
                 non_id_holders.append(document)
