@@ -71,7 +71,7 @@ def detection_view(request):
             # Categorize by role and ID card status
             if role == 'outsider' or 'unidentified':
                 outsiders.append(document)
-            elif not document.get('wearing_id_card', False):  # Check ID card status
+            if not document.get('wearing_id_card', False):  # Check ID card status
                 non_id_holders.append(document)
 
         # Debugging (Optional)
@@ -94,7 +94,7 @@ def camera_id(request):
     return render(request, 'camera_id.html')
 
 
-DATA_FILE_PATH = os.path.join(STATIC_ROOT,'data.json')
+DATA_FILE_PATH = './data.json'
 
 cached_data = None
 

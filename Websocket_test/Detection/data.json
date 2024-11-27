@@ -2,17 +2,5 @@
     {
         "camera_ip": 0,
         "camera_location": "lh-32"
-    },
-    {
-        "camera_ip": 0,
-        "camera_location": "32"
-    },
-    {
-        "camera_ip": 0,
-        "camera_location": "lh-32"
-    },
-    {
-        "camera_ip": 0,
-        "camera_location": "32"
-    }   
+    }
 ]

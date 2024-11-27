@@ -12,6 +12,9 @@ from datetime import datetime
 from pathlib import Path
 from Face_recognition.face_recognize_yolo import recognize_faces_in_persons
 from ID_detection.yolov11.ID_Detection import detect_id_card
+from Detection.Detection.settings import STATIC_ROOT
+
+IMAGE_FOLDER_PATH = os.path.join(STATIC_ROOT, 'images')
 
 app = FastAPI()
 
@@ -70,7 +73,7 @@ for index, camera in enumerate(camera_data):
     threading.Thread(target=capture_frame, args=(index, camera["camera_ip"]), daemon=True).start()
 
 # Function to process and save detections to MongoDB
-def process_and_save_detections(frame, person_bboxes, flags, associations, camrea_location):
+def process_and_save_detections(frame, person_bboxes, flags, associations, camera_location):
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     for idx, (person_box, flag) in enumerate(zip(person_bboxes, flags)):
@@ -86,23 +89,21 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camre
         wearing_id_card = bool(id_card_type)
 
         # Save data for specific conditions
-        if flag in ["UNKNOWN", "SIETIAN"] and not wearing_id_card:
-            image_name = f"person_{camrea_location}_{current_time}_{idx}.jpg"
-            image_path = os.path.join("images", image_name)
+        if (flag == "UNKNOWN") or (flag == "SIETIAN" and not wearing_id_card):
+            image_name = f"person_{camera_location}_{current_time}_{idx}.jpg"
+            image_path = os.path.join(IMAGE_FOLDER_PATH, image_name)
 
             try:
-                os.makedirs("images", exist_ok=True)  # Ensure directory exists
+                os.makedirs(IMAGE_FOLDER_PATH, exist_ok=True)  # Ensure directory exists
                 cv2.imwrite(image_path, person_image)
 
                 document = {
                     "_id": ObjectId(),
-                    "Reg_no": idx,
-                    "location": camrea_location,
-                    "time": current_time,
+                    "location": camera_location,
+                    "time": datetime.now().strftime("%Y%m%d_%H%M%S"),
                     "Role": "Unidentified" if flag == "UNKNOWN" else "Insider",
                     "Wearing_id_card": wearing_id_card,
-                    "image": image_path,
-                    "recognition_status": "Unknown" if flag == "UNKNOWN" else "Recognized",
+                    "image": "/images/" + image_name,
                 }
 
                 result = collection.insert_one(document)
@@ -126,13 +127,16 @@ async def video_feed(websocket: WebSocket, camera_id: int):
             modified_frame, person_boxes, associations = detect_id_card(frame)
             modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
 
+            print(camera_data, camera_id)
+
+            location = camera_data[camera_id]['camera_location']
             # Save detections to MongoDB based on conditions
             process_and_save_detections(
                 frame=frame,
                 person_bboxes=person_boxes,
                 flags=flags,
                 associations=associations,
-                camera_id=current_frames[camera_id['camera_location']]
+                camera_location = location
             )
 
             # Send the modified frame to the client as base64
@@ -142,13 +146,9 @@ async def video_feed(websocket: WebSocket, camera_id: int):
 
         await asyncio.sleep(0.1)  # Sleep to prevent excessive CPU usage
 
-# Test frame processing (optional for debugging)
-def frame_test(frame):
-    modified_frame, person_boxes, associations = detect_id_card(frame)
-    modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
-    cv2.imwrite('output_frame.jpg', modified_frame)
 
 if __name__ == "__main__":
     # Run the FastAPI server
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7000)
+

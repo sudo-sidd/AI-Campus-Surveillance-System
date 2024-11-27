@@ -11,7 +11,7 @@ class Person(models.Model):
     object_id = models.CharField(max_length=24, default=generate_object_id, editable=False)
 
     # Registration number
-    reg_no = models.CharField(max_length=50, null=True, blank=True)
+    # reg_no = models.CharField(max_length=50, null=True, blank=True)
 
     # Name field
     name = models.CharField(max_length=100)
@@ -38,4 +38,4 @@ class Person(models.Model):
         db_table = 'DetectionDB'  # Specify collection/table name for MongoDB or relational DB
 
     def __str__(self):
-        return f"{self.name} - {self.role} - {self.reg_no}"
+        return f"{self.name} - {self.role}"
