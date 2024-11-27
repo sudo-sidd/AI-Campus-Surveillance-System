@@ -45,7 +45,8 @@ def detect_id_card(frame):
             id_cards.append((x1, y1, x2, y2, class_name))
 
         # Draw bounding boxes for all detections
-        label = f"{class_name} ({confidence:.2f})"
+        # label = f"{class_name} ({confidence:.2f})"
+        label=''
         color = colors[class_id % len(colors)]
         cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
         cv2.putText(frame, label, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color=color, thickness=2)
