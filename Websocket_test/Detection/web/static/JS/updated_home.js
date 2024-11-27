@@ -1,9 +1,9 @@
-window.onload = function() {
+window.onload = function () {
     const cameraGrid = document.getElementById('cameraGrid');
     let cameras = [];
 
-    // Fetch camera data from the JSON file
-    fetch('/static/data.json')
+    // Fetch camera data from the backend instead of exposing data.json
+    fetch('/api/cameras/') // Assuming you have an API endpoint to serve the camera data
         .then(response => response.json())
         .then(data => {
             cameras = data;
@@ -13,53 +13,58 @@ window.onload = function() {
             console.error("Error loading camera data:", error);
         });
 
+    // Function to load cameras dynamically
     function loadCameras() {
+        const cameraFragments = document.createDocumentFragment(); // Use a fragment to avoid frequent DOM updates
+
         cameras.forEach((camera, index) => {
             const cameraDiv = document.createElement('div');
             cameraDiv.classList.add('col-md-4', 'mb-4'); // Bootstrap grid for 3 cameras per row
             cameraDiv.setAttribute('id', 'camera' + index);
             cameraDiv.setAttribute('onclick', `openCamera(${index})`);
 
-            // Dynamically load video stream from backend for each camera
             cameraDiv.innerHTML = `
-                <div class="card" style='width: 350px; height: 180px;'>
-                    <img id="video${index}" class="card-img-top" src="" alt="${camera.camera_location} Live Feed" style="height: 180px;">
-                    <div class="card-body text-center">
-                        <p class="card-text">${camera.camera_location}</p>
+                <div class="card" style="width: 100%; max-width: 350px; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                    <img id="video${index}" class="card-img-top" src="" alt="${camera.camera_location} Live Feed" style="height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;">
+                    <div class="card-body d-flex flex-column justify-content-end" style="padding: 16px;">
+                        <p class="card-text mb-0" style="font-size: 16px; font-weight: 600; color: #333; text-align: center;">${camera.camera_location}</p>
                     </div>
                 </div>
             `;
-            cameraGrid.appendChild(cameraDiv);
+
+            cameraFragments.appendChild(cameraDiv);
 
             // Open WebSocket connection for each camera feed
             openCameraFeed(camera, index);
         });
+
+        // Append all camera elements at once to improve performance
+        cameraGrid.appendChild(cameraFragments);
     }
 
     // Function to open the camera in full screen and play the video stream using Bootstrap modal
-    function openCamera(index) {
+    function openCamera(cameraId) {
         const modalContent = document.getElementById('modalCameraContent');
-        
-        // Set the source of the fullscreen image dynamically
-        const videoElement = document.getElementById(`video${index}`);
-        if (videoElement) {
-            const videoSrc = videoElement.src; // Get the current video stream (base64 or URL)
-            modalContent.src = videoSrc; // Set the modal image source to the current video
-        }
+
+        // Use image tag to display full-screen live stream in the modal
+        modalContent.innerHTML = `
+            <img id="video${cameraId}-fullscreen" class="img-fluid" src="/live_stream/${cameraId}" alt="Camera ${cameraId} Live Feed">
+        `;
 
         // Show the Bootstrap modal
         $('#cameraModal').modal('show');
     }
 
-    // Open WebSocket connection for camera and update the feed
+    // Function to open WebSocket connection for each camera and update the feed
     function openCameraFeed(camera, index) {
-        const socket = new WebSocket(`ws://192.168.143.86:7000/ws/video/${index}/`);  // FastAPI WebSocket endpoint
+        const socketUrl = `ws://192.168.143.86:7000/ws/video/${index}/`;  // Use secure WebSocket (wss)
+        const socket = new WebSocket(socketUrl);
 
-        socket.onopen = function() {
+        socket.onopen = function () {
             console.log(`Connected to WebSocket for Camera ${index}`);
         };
 
-        socket.onmessage = function(event) {
+        socket.onmessage = function (event) {
             const data = JSON.parse(event.data);
             const frame = data.frame;
 
@@ -76,11 +81,11 @@ window.onload = function() {
             }
         };
 
-        socket.onerror = function(error) {
+        socket.onerror = function (error) {
             console.error(`WebSocket error for Camera ${index}:`, error);
         };
 
-        socket.onclose = function() {
+        socket.onclose = function () {
             console.log(`Disconnected from WebSocket for Camera ${index}`);
         };
     }

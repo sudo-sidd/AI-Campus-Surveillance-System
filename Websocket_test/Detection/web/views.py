@@ -6,7 +6,7 @@ from django.http import HttpResponse, StreamingHttpResponse
 import json
 import os
 from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
+from Detection.settings import STATIC_ROOT
 import requests
 
 def my_view(request):
@@ -94,7 +94,7 @@ def camera_id(request):
     return render(request, 'camera_id.html')
 
 
-DATA_FILE_PATH = os.path.join(settings.BASE_DIR, 'data.json')
+DATA_FILE_PATH = os.path.join(STATIC_ROOT,'data.json')
 
 cached_data = None
 
@@ -122,7 +122,8 @@ def save_data(data):
 # Endpoint to retrieve data
 def get_data(request):
     data = load_data()
-    return JsonResponse(data, safe=False)
+    # print(DATA_FILE_PATH)
+    return JsonResponse(data, safe = False)
 
 # Endpoint to save new data
 @csrf_exempt
