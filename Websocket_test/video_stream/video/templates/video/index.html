@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Webcam Stream</title>
+    <style>
+        #video-feed {
+            max-width: 640px;
+            max-height: 480px;
+            margin: 0 auto;
+            text-align: center;
+        }
+    
+        #video-feed-img {
+            max-width: 100%;
+            max-height: 100%;
+        }
+    </style>
+    
+</head>
+<body>
+    <h1>Live Webcam Stream</h1>
+    <div id="video-feed"></div>
+
+    <script>
+        const videoSocket = new WebSocket("ws://192.168.143.86:7000/ws/video/");
+    
+        // Create a single image element to display the frames
+        let imgElement = document.createElement('img');
+        imgElement.id = 'video-feed-img'; // Assign an ID to the image
+        document.getElementById('video-feed').appendChild(imgElement);
+    
+        videoSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            const frame = data['frame']; // Base64 frame from the server
+    
+            // Update the image's src attribute to display the new frame
+            imgElement.src = 'data:image/jpeg;base64,' + frame;
+        };
+    </script>
+    
+</body>
+</html>
