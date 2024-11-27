@@ -64,8 +64,8 @@
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 100px;">
                             {% endif %}
                         </td>
-                        <td>{{ outsider.wearing_id_card }}</td>
-                        <td>{{ outsider.created_at|date:"Y-m-d H:i:s" }}</td>
+                        <td>{{ outsider.Wearing_id_card }}</td>
+                        <td>{{ outsider.time}}</td>
                         <td>{{ outsider.location }}</td>
                     </tr>
                     {% endfor %}
@@ -95,9 +95,9 @@
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 100px;">
                             {% endif %}
                         </td>
-                        <td>{{ non_id_holder.wearing_id_card }}</td>
-                        <td>{{ non_id_holder.created_at|date:"Y-m-d H:i:s" }}</td>
-                        <td>{{ non_id_holder.role }}</td>
+                        <td>{{ non_id_holder.Wearing_id_card }}</td>
+                        <td>{{ non_id_holder.time }}</td>
+                        <td>{{ non_id_holder.Role }}</td>
                         <td>{{ non_id_holder.location }}</td>
                     </tr>
                     {% endfor %}
