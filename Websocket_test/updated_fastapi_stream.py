@@ -10,9 +10,10 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
 from pathlib import Path
-from Face_recognition.face_recognize_yolo import recognize_faces_in_persons
+from Face_recognition.face_recognize_yolo_updated import recognize_faces_in_persons
 from ID_detection.yolov11.ID_Detection import detect_id_card
 from Detection.Detection.settings import STATIC_ROOT
+import time
 
 IMAGE_FOLDER_PATH = os.path.join(STATIC_ROOT, 'images')
 
@@ -116,35 +117,41 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
 @app.websocket("/ws/video/{camera_id}/")
 async def video_feed(websocket: WebSocket, camera_id: int):
     await websocket.accept()
-    
+
+    last_save_time = time.time()
+    save_interval = 2.0  # Save interval in seconds
+    frame_count = 0
     while True:
         if camera_id in current_frames:
             # Decode the current frame from base64 to an image
             frame_data = base64.b64decode(current_frames[camera_id])
             frame = cv2.imdecode(np.frombuffer(frame_data, dtype=np.uint8), cv2.IMREAD_COLOR)
 
-            # Process the frame for face and ID detection
-            modified_frame, person_boxes, associations = detect_id_card(frame)
-            modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
+            frame_count += 1
 
-            print(camera_data, camera_id)
+            if frame_count % 3 ==0:
+                # Process the frame for face and ID detection
+                modified_frame, person_boxes, associations = detect_id_card(frame)
+                modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
 
-            location = camera_data[camera_id]['camera_location']
-            # Save detections to MongoDB based on conditions
-            process_and_save_detections(
-                frame=frame,
-                person_bboxes=person_boxes,
-                flags=flags,
-                associations=associations,
-                camera_location = location
-            )
+                # print(camera_data, camera_id)
+                if time.time() - last_save_time > save_interval:
+                    location = camera_data[camera_id]['camera_location']
+                    # Save detections to MongoDB based on conditions
+                    process_and_save_detections(
+                        frame=frame,
+                        person_bboxes=person_boxes,
+                        flags=flags,
+                        associations=associations,
+                        camera_location = location
+                    )
 
-            # Send the modified frame to the client as base64
-            _, jpeg = cv2.imencode('.jpg', modified_frame)
-            frame_b64 = base64.b64encode(jpeg.tobytes()).decode('utf-8')
-            await websocket.send_text(f'{{"frame": "{frame_b64}"}}')
+                    # Send the modified frame to the client as base64
+                    _, jpeg = cv2.imencode('.jpg', modified_frame)
+                    frame_b64 = base64.b64encode(jpeg.tobytes()).decode('utf-8')
+                    await websocket.send_text(f'{{"frame": "{frame_b64}"}}')
 
-        await asyncio.sleep(0.1)  # Sleep to prevent excessive CPU usage
+            await asyncio.sleep(0.1)  # Sleep to prevent excessive CPU usage
 
 
 if __name__ == "__main__":
