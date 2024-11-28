@@ -90,7 +90,7 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
         wearing_id_card = bool(id_card_type)
 
         # Save data for specific conditions
-        if (flag == "UNKNOWN") or (flag == "SIETIAN" and not wearing_id_card):
+        if (flag == "UNKNOWN") or (not wearing_id_card):
             image_name = f"person_{camera_location}_{current_time}_{idx}.jpg"
             image_path = os.path.join(IMAGE_FOLDER_PATH, image_name)
 
