@@ -1,1 +1,7 @@
 /Websocket_test/Face_recognition/face_recognition/arcface/weights/
+/Websocket_test/Face_recognition/__pycache__
+/Websocket_test/Face_recognition/face_recognition/arcface/__pycache__
+/Websocket_test/Detection/Detection/__pycache__
+/Websocket_test/Detection/web/__pycache__
+/Websocket_test/ID_detection/__pycache__
+/Websocket_test/ID_detection/yolov11/__pycache__
