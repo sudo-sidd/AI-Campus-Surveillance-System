@@ -85,11 +85,11 @@ def detect_id_card(frame):
 
     for person_id, data in updated_tracked_persons.items():
         box, start_time, id_card = data
-        if current_time - start_time >= 3:  # Check if tracked for at least 3 seconds
+        if current_time - start_time >= 2:  # Check if tracked for at least 3 seconds
             if id_card:
                 association_status.append(f"{id_card}")
             else:
-                association_status.append("no-id")
+                association_status.append("None")
         else:
             association_status.append(f"Waiting for confirmation...")
 
