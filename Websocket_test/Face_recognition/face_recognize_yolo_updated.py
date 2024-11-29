@@ -14,7 +14,7 @@ import time
 
 # Track face states
 face_tracker = defaultdict(lambda: {"state": "UNDETERMINED", "last_seen": time.time(), "box": None})
-timeout = 2  # seconds before marking as UNKNOWN
+timeout = 3  # seconds before marking as UNKNOWN
 lost_threshold = 5  # seconds before removing from the tracker
 
 

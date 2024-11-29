@@ -130,7 +130,7 @@ async def video_feed(websocket: WebSocket, camera_id: int):
 
             frame_count += 1
 
-            if frame_count % 3 ==0:
+            if frame_count % 2 ==0:
                 # Process the frame for face and ID detection
                 modified_frame, person_boxes, associations = detect_id_card(frame)
                 modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
