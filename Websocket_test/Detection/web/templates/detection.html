@@ -90,7 +90,7 @@
                     <tr>
                         <td>
                             {% if non_id_holder.image %}
-                                <img src="{% static non_id_holder.image %}" alt="Non-ID Holder Image" style="width: 100px;" class="clickable-image" onclick="openModal('{% static non_id_holder.image %}')">
+                                <img src="{% static non_id_holder.image %}" alt="Non-ID Holder Image" style="width: 100px;" class="clickable-image">
                             {% else %}
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 100px;">
                             {% endif %}

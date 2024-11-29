@@ -9,6 +9,15 @@ import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
+from collections import defaultdict
+import time
+
+# Track face states
+face_tracker = defaultdict(lambda: {"state": "UNDETERMINED", "last_seen": time.time(), "box": None})
+timeout = 2  # seconds before marking as UNKNOWN
+lost_threshold = 5  # seconds before removing from the tracker
+
+
 # Device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -68,6 +77,7 @@ def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
     intersection_area = (x2 - x1) * (y2 - y1)
 
     return intersection_area / face_area > iou_threshold
+
 def recognize_faces_in_persons(frame, person_bboxes):
     """
     Detect faces within person bounding boxes and classify them as SIETIAN, UNKNOWN, or UNDETERMINED.
@@ -78,7 +88,9 @@ def recognize_faces_in_persons(frame, person_bboxes):
         modified_frame: Frame with person bounding boxes and recognition results.
         states: List of states for each person box - SIETIAN, UNKNOWN, or UNDETERMINED.
     """
-    # Detect faces using YOLO (or another detector)
+    global face_tracker
+
+    # Detect faces using YOLO
     face_results = yolo_model.predict(frame, conf=0.5)
     face_boxes = [
         list(map(int, bbox)) for result in face_results for bbox in result.boxes.xyxy
@@ -87,76 +99,56 @@ def recognize_faces_in_persons(frame, person_bboxes):
     # Initialize states for person bounding boxes
     states = ["UNDETERMINED"] * len(person_bboxes)
 
-    # Process each person bounding box
-    for idx, person_box in enumerate(person_bboxes):
-        person_detected = False
+    # Process each detected face
+    current_time = time.time()
+    updated_faces = set()
 
-        for face_box in face_boxes:
-            if is_face_in_person_box(face_box, person_box):
-                person_detected = True
+    for face_box in face_boxes:
+        # Generate a temporary ID for the face using the bounding box
+        face_id = tuple(face_box)  # Simple ID based on coordinates
+        updated_faces.add(face_id)
 
-                # Crop and preprocess the face image
-                x1, y1, x2, y2 = map(int, face_box)
-                cropped_face = frame[y1:y2, x1:x2]
-                score, name = face_rec(cropped_face)
+        # Crop and preprocess the face image
+        x1, y1, x2, y2 = face_box
+        cropped_face = frame[y1:y2, x1:x2]
+        score, name = face_rec(cropped_face)
 
-                # Update state and draw on the frame
-                if name:
-                    states[idx] = f"SIETIAN ({name})"
-                    color = (0, 255, 0)  # Green for recognized
-                else:
-                    states[idx] = "UNKNOWN"
-                    color = (0, 0, 255)  # Red for unknown
+        # Update tracker
+        if face_id in face_tracker:
+            face_tracker[face_id]["last_seen"] = current_time
+            face_tracker[face_id]["box"] = face_box
+        else:
+            face_tracker[face_id] = {"state": "UNDETERMINED", "last_seen": current_time, "box": face_box}
 
-                # Draw face bounding box and label
-                cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(
-                    frame,
-                    f"{states[idx]}",
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.8,
-                    color,
-                    2,
-                )
-                break
+        # Determine the state based on recognition
+        if name:
+            face_tracker[face_id]["state"] = f"SIETIAN ({name})"
+        elif current_time - face_tracker[face_id]["last_seen"] > timeout:
+            face_tracker[face_id]["state"] = "UNKNOWN"
 
-        # If no face is detected in the person box
-        if not person_detected:
-            states[idx] = "UNDETERMINED"
-            color = (255, 255, 0)  # Yellow for undetermined
-
-        # Draw person bounding box and state
-        x1, y1, x2, y2 = map(int, person_box)
+        # Draw bounding box and state
+        color = (0, 255, 0) if "SIETIAN" in face_tracker[face_id]["state"] else (0, 0, 255)
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(
             frame,
-            states[idx],
+            face_tracker[face_id]["state"],
             (x1, y1 - 10),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.8,
             color,
             2,
         )
-    return frame, states
 
-#
-# # Main function (example usage)
-# if __name__ == "__main__":
-#     cap = cv2.VideoCapture(rtsp_url)  # Replace with video file if needed
-#     while cap.isOpened():
-#         ret, frame = cap.read()
-#         if not ret:
-#             break
-#
-#         annotated_frame = process_frame(frame)
-#         cv2.imshow("Face Recognition", annotated_frame)
-#
-#         if cv2.waitKey(1) & 0xFF == ord("q"):
-#             break
-#
-#     cap.release()
-#     # img = cv2.imread("test.jpg")
-#     # annotated_frame = process_frame(img)
-#     # cv2.imwrite("op.jpg",annotated_frame)
-#     #
+    # Cleanup: Remove lost faces
+    lost_faces = [face_id for face_id, data in face_tracker.items() if current_time - data["last_seen"] > lost_threshold]
+    for face_id in lost_faces:
+        del face_tracker[face_id]
+
+    # Check person bounding boxes for state updates
+    for idx, person_box in enumerate(person_bboxes):
+        for face_id, face_data in face_tracker.items():
+            if is_face_in_person_box(face_data["box"], person_box):
+                states[idx] = face_data["state"]
+                break
+
+    return frame, states
