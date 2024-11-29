@@ -27,7 +27,7 @@ recognizer = iresnet_inference(
 # Preloaded face embeddings and names
 images_names, images_embs = read_features(
     feature_path=os.path.join(
-        BASE_DIR, "datasets", "face_features", "arcface100_feature"
+        BASE_DIR, "datasets", "face_features", "arcface100_featureALL"
     )
 )
 # Preprocessing for ArcFace input
