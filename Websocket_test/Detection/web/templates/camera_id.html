@@ -140,7 +140,7 @@
 
     <script>
         async function fetchData() {
-            const response = await fetch("{% url 'get_data' %}");
+            const response = await fetch("{% url 'camera_data' %}");
             const data = await response.json();
             renderTable(data);
         }

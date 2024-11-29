@@ -71,7 +71,7 @@ def detection_view(request):
             # Categorize by role and ID card status
             if role == 'outsider' or 'unidentified':
                 outsiders.append(document)
-            if  document.get('wearing_id_card', False):  # Check ID card status
+            if  not document.get('wearing_id_card', False):  # Check ID card status
                 non_id_holders.append(document)
 
         # Debugging (Optional)

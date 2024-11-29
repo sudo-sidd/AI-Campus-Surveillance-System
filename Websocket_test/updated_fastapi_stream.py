@@ -29,7 +29,7 @@ except Exception as e:
     exit(1)
 
 # Load camera data from data.json
-DATA_FILE_PATH = Path('../Detection/data.json')
+DATA_FILE_PATH = Path('./Detection/data.json')
 cached_data = None
 
 def load_data():
@@ -48,8 +48,9 @@ def load_data():
     return cached_data
 
 # Load camera data
-camera_data = [{'camera_ip': 0,'camera_location':'lh_32'}]  # Adjust for your actual camera IP or path
-
+# camera_data = [{'camera_ip': 0,'camera_location':'lh_32'}]  # Adjust for your actual camera IP or path
+camera_data = load_data()
+print(camera_data)
 # A dictionary to store frames for each camera
 current_frames = {}
 
