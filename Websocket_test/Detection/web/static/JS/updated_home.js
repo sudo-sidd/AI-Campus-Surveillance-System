@@ -58,12 +58,12 @@ window.onload = function () {
 
     // Function to open WebSocket connection for each camera and update the feed
     function openCameraFeed(camera, index) {
-        const socketUrl = `ws://192.168.57.35:7000/ws/video/${index}/`;  // Use secure WebSocket (wss)
+        const socketUrl = `ws://192.168.143.34:7000/ws/video/${index}/`;  // Use secure WebSocket (wss)
         const socket = new WebSocket(socketUrl);
 
         socket.onopen = function () {
             console.log(`Connected to WebSocket for Camera ${index}`);
- x       };
+        };
 
         socket.onmessage = function (event) {
             const data = JSON.parse(event.data);
