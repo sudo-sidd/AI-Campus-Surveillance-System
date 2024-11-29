@@ -155,8 +155,8 @@ async def video_feed(websocket: WebSocket, camera_id: int):
             await asyncio.sleep(0.1)  # Sleep to prevent excessive CPU usage
 
 
-if __name__ == "__main__":
-    # Run the FastAPI server
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=7000)
+# if __name__ == "__main__":
+#     # Run the FastAPI server
+#     import uvicorn
+#     uvicorn.run(app, host="0.0.0.0", port=7000)
 
