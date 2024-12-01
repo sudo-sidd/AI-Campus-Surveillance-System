@@ -10,7 +10,8 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
 from pathlib import Path
-from Face_recognition.face_recognize_yolo import recognize_faces_in_persons
+from Face_recognition.face_recognize_yolo_updated import recognize_faces_in_persons
+from Face_recognition.FaceTracker import FaceTracker
 from ID_detection.yolov11.ID_Detection import detect_id_card
 from Detection.Detection.settings import STATIC_ROOT
 import time
@@ -53,10 +54,15 @@ camera_data = load_data()
 print(camera_data)
 # A dictionary to store frames for each camera
 current_frames = {}
-
-# Function to capture frames from each camera
+camera_trackers = {}# Function to capture frames from each camera
 def capture_frame(camera_index, camera_ip):
+    global camera_trackers
+    if camera_index not in camera_trackers:
+        camera_trackers[camera_index] = FaceTracker()
+
+    face_tracker = camera_trackers[camera_index]
     cap = cv2.VideoCapture(camera_ip)  # RTSP stream URL
+
     if not cap.isOpened():
         print(f"Failed to open camera {camera_index} at {camera_ip}")
         return
@@ -68,11 +74,10 @@ def capture_frame(camera_index, camera_ip):
         if ret:
             frame_count += 1
 
-            if frame_count % 3 == 0:
+            if frame_count % 1 == 0:
                 # Process the frame for face and ID detection
                 modified_frame, person_boxes, associations = detect_id_card(frame)
-                modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes)
-
+                modified_frame, flags  = recognize_faces_in_persons(modified_frame, person_boxes,face_tracker)
                 # print(camera_data, camera_id)
                 if time.time() - last_save_time > save_interval:
                     location = camera_data[camera_index]['camera_location']
