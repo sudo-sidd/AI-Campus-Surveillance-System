@@ -1,6 +1,6 @@
 [
     {
         "camera_ip": 0,
-        "camera_location": "lap_cam"
+        "camera_location": "webcam"
     }
 ]
