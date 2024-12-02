@@ -105,7 +105,7 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
 
     for idx, (person_box, flag) in enumerate(zip(person_bboxes, flags)):
-        if flag == "UNDETERMINED":  # Skip if no face detected
+        if flag == "PENDING":  # Skip if no face detected
             continue
 
         # Extract person sub-image from frame
@@ -129,7 +129,7 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
                     "_id": ObjectId(),
                     "location": camera_location,
                     "time": datetime.now().strftime("%D %I:%M %p") ,
-                    "Role": "Unidentified" if flag == "UNKNOWN" else "Insider",
+                    "Role": "Unidentified" if flag == "UNKNOWN" else "SIETIAN",
                     "Wearing_id_card": wearing_id_card,
                     "image": "/images/" + image_name,
                 }
