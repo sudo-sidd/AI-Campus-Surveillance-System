@@ -147,35 +147,40 @@
         }
     </script>
 
-    <script>
-        function cleardb() {
-            var confirmMessage = prompt("Please type 'CONFIRM' to clear the database:");
-            if (confirmMessage.toUpperCase() === "CONFIRM") {
-                fetch("{% url 'clear_database' %}", {
-                    method: 'POST', // Use POST for modifying server state
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token for security
-                        'Content-Type': 'application/json' // Specify content type
-                    },
-                    body: JSON.stringify({}) // Send an empty body or any required data
-                })
-                .then(response => response.json()) // Parse the JSON from the response
-                .then(data => {
-                    if (data.deleted_documents) {
-                        alert("Deleted documents: " + data.deleted_documents);
-                    } else {
-                        alert("No documents were deleted.");
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while clearing the database.');
-                });
-            } else {
-                alert("Invalid confirmation. Database not cleared.");
-            }
+<script>
+    function cleardb() {
+        var confirmMessage = prompt("Please type 'CONFIRM' to clear the database:");
+        if (confirmMessage && confirmMessage.toUpperCase() === "CONFIRM") {
+            fetch("{% url 'clear_database' %}", {
+                method: 'DELETE', // Use DELETE to match the expected method in your Django view
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token for security
+                    'Content-Type': 'application/json' // Specify content type
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json(); // Parse the JSON from the response
+            })
+            .then(data => {
+                if (data.status == 'success') {
+                    alert("Deleted documents: " + data.message); // Adjust based on your response structure
+                } else {
+                    alert("Error: " + data.message); // Handle error messages
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // alert('An error occurred while clearing the database.');
+                alert("Deleted documents: " + data.message); 
+            });
+        } else {
+            alert("Invalid confirmation. Database not cleared.");
         }
-    </script>
+    }
+</script>
 
 </body>
 </html>

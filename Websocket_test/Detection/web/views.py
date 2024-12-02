@@ -93,16 +93,18 @@ def detection_view(request):
     })
 
 @csrf_exempt  # Use this only if you want to bypass CSRF checks for this view
-def delete_db(request):
-    if request.method == 'POST':
-        print("Request received")
-        DB = MongoDBDeleter()
-        deleted_documents = DB.delete_all_documents()
-        DB.close_connection()
-        print("Documents deleted", deleted_documents)
+def delete_all_documents(request):
+        db = get_database()
+        collection = db['DatabaseDB']  # Replace with your actual collection name
         
-        return JsonResponse({'deleted_documents': deleted_documents})
-    return JsonResponse({'error': 'Invalid request method.'}, status=400)
+        try:
+            # Delete all documents in the collection
+            result = collection.delete_many({})  # Empty filter to match all documents
+            print('Done!', JsonResponse({'status': 'success', 'message': f'{result.deleted_count} documents deleted successfully.'} ))
+            return JsonResponse({'status': 'success', 'message': f'{result.deleted_count} documents deleted successfully.'}, status = 200)
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 def camera_id(request):
     return render(request, 'camera_id.html')
