@@ -1,3 +1,4 @@
+
 import cv2
 import numpy as np
 import torch
@@ -22,17 +23,27 @@ yolo_model = YOLO(os.path.join(BASE_DIR,"face_detection","yolo","weights","yolo1
 recognizer = iresnet_inference(
     model_name="r100",
     path=os.path.join(
-        BASE_DIR, "face_recognition", "arcface", "weights", "arcface_r100.pth"
+        BASE_DIR, "face_recognition", "arcface", "weights", "glink360k_cosface_r100_fp16_0.1.pth"
     ),
     device=device,
 )
 
-# Preloaded face embeddings and names
-images_names, images_embs = read_features(
-    feature_path=os.path.join(
-        BASE_DIR, "datasets", "face_features", "arcface100_featureALL"
-    )
-)
+# # Preloaded face embeddings and names
+# images_names, images_embs = read_features(
+#     feature_path=os.path.join(
+#         BASE_DIR, "datasets", "face_features", "arcface100_featureALL"
+#     )
+# )
+
+feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
+
+# Construct paths for the two .npy files
+images_name_path = os.path.join(feature_path, "images_name.npy")
+images_emb_path = os.path.join(feature_path, "images_emb.npy")
+# Load the .npy files
+images_names = np.load(images_name_path)
+images_embs = np.load(images_emb_path)
+
 
 # Preprocessing for ArcFace input
 face_preprocess = transforms.Compose([
