@@ -49,14 +49,17 @@ def load_data():
     return cached_data
 
 # Load camera data
-# camera_data = [{'camera_ip': 0,'camera_location':'lh_32'}]  # Adjust for your actual camera IP or path
 camera_data = load_data()
 print(camera_data)
+
 # A dictionary to store frames for each camera
 current_frames = {}
-camera_trackers = {}# Function to capture frames from each camera
+camera_trackers = {}
+# A dictionary to track the last save time for each face
+last_save_times = {}  # Format: {person_id: timestamp}
+
 def capture_frame(camera_index, camera_ip):
-    global camera_trackers
+    global camera_trackers, last_save_times
     if camera_index not in camera_trackers:
         camera_trackers[camera_index] = FaceTracker()
 
@@ -66,9 +69,10 @@ def capture_frame(camera_index, camera_ip):
     if not cap.isOpened():
         print(f"Failed to open camera {camera_index} at {camera_ip}")
         return
-    last_save_time = time.time()
+
     save_interval = 2.0  # Save interval in seconds
     frame_count = 0
+
     while True:
         ret, frame = cap.read()
         if ret:
@@ -77,18 +81,18 @@ def capture_frame(camera_index, camera_ip):
             if frame_count % 1 == 0:
                 # Process the frame for face and ID detection
                 modified_frame, person_boxes, associations = detect_id_card(frame)
-                modified_frame, flags  = recognize_faces_in_persons(modified_frame, person_boxes,face_tracker)
-                # print(camera_data, camera_id)
-                if time.time() - last_save_time > save_interval:
-                    location = camera_data[camera_index]['camera_location']
-                    # Save detections to MongoDB based on conditions
-                    process_and_save_detections(
-                        frame=frame,
-                        person_bboxes=person_boxes,
-                        flags=flags,
-                        associations=associations,
-                        camera_location=location
-                    )
+                modified_frame, flags = recognize_faces_in_persons(modified_frame, person_boxes, face_tracker)
+
+                location = camera_data[camera_index]['camera_location']
+                # Process and save detections to MongoDB based on conditions
+                process_and_save_detections(
+                    frame=frame,
+                    person_bboxes=person_boxes,
+                    flags=flags,
+                    associations=associations,
+                    camera_location=location,
+                    save_interval=save_interval
+                )
 
             # Encode the frame to JPEG and then base64
             _, jpeg = cv2.imencode('.jpg', frame)
@@ -100,9 +104,9 @@ def capture_frame(camera_index, camera_ip):
 for index, camera in enumerate(camera_data):
     threading.Thread(target=capture_frame, args=(index, camera["camera_ip"]), daemon=True).start()
 
-# Function to process and save detections to MongoDB
-def process_and_save_detections(frame, person_bboxes, flags, associations, camera_location):
+def process_and_save_detections(frame, person_bboxes, flags, associations, camera_location, save_interval):
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    threshold_time = 10  # Time threshold in seconds to save a face again
 
     for idx, (person_box, flag) in enumerate(zip(person_bboxes, flags)):
         if flag == "PENDING":  # Skip if no face detected
@@ -111,6 +115,9 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
         # Extract person sub-image from frame
         x1, y1, x2, y2 = [int(coord) for coord in person_box]
         person_image = frame[y1:y2, x1:x2]
+
+        # Generate a face ID (in this case, using bounding box as the face ID)
+        person_id = tuple(person_box)  # This could be more sophisticated (e.g., embeddings)
 
         # Determine ID card association
         id_card_type = associations[idx] if idx < len(associations) else None
@@ -125,13 +132,23 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
                 os.makedirs(IMAGE_FOLDER_PATH, exist_ok=True)  # Ensure directory exists
                 cv2.imwrite(image_path, person_image)
 
+                # Check if a document with the same person_id exists in the database
+                existing_document = collection.find_one({"person_id": person_id})
+
+                if existing_document:
+                    # If the document exists, delete the old entry
+                    collection.delete_one({"_id": existing_document["_id"]})
+                    print(f"Deleted old entry with _id: {existing_document['_id']}")
+
+                # Insert the new document
                 document = {
                     "_id": ObjectId(),
                     "location": camera_location,
-                    "time": datetime.now().strftime("%D %I:%M %p") ,
+                    "time": datetime.now().strftime("%D %I:%M %p"),
                     "Role": "Unidentified" if flag == "UNKNOWN" else "SIETIAN",
                     "Wearing_id_card": wearing_id_card,
                     "image": "/images/" + image_name,
+                    "person_id": person_id  # Store person_id for future lookups
                 }
 
                 result = collection.insert_one(document)
@@ -145,24 +162,20 @@ def process_and_save_detections(frame, person_bboxes, flags, associations, camer
 async def video_feed(websocket: WebSocket, camera_id: int):
     await websocket.accept()
 
-
     while True:
         if camera_id in current_frames:
             # Decode the current frame from base64 to an image
             frame_data = base64.b64decode(current_frames[camera_id])
             frame = cv2.imdecode(np.frombuffer(frame_data, dtype=np.uint8), cv2.IMREAD_COLOR)
 
-
-                    # Send the modified frame to the client as base64
+            # Send the modified frame to the client as base64
             _, jpeg = cv2.imencode('.jpg', frame)
             frame_b64 = base64.b64encode(jpeg.tobytes()).decode('utf-8')
             await websocket.send_text(f'{{"frame": "{frame_b64}"}}')
 
             await asyncio.sleep(0.1)  # Sleep to prevent excessive CPU usage
 
-
 if __name__ == "__main__":
     # Run the FastAPI server
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7000)
-
