@@ -8,6 +8,7 @@ import os
 from django.views.decorators.csrf import csrf_exempt
 from Detection.settings import STATIC_ROOT
 import requests
+from .DBDetetion import MongoDBDeleter
 
 def my_view(request):
     db = get_database()
@@ -67,17 +68,17 @@ def detection_view(request):
         # Categorize data
         for document in data:
             document['_id'] = str(document['_id'])  # Convert ObjectId to string for JSON compatibility
-            role = document.get('role', '').lower()  # Ensure role field is processed in lowercase
+            # role = document.get('role', '').lower()  # Ensure role field is processed in lowercase
 
             # Categorize by role and ID card status
-            if role == 'outsider' or 'unidentified':
+            if document['Role'] == 'Unidentified':
                 outsiders.append(document)
-            if  not document.get('wearing_id_card', False):  # Check ID card status
+            if (document["Wearing_id_card"] == 'false' or document['Wearing_id_card'] == 'False' or document['Wearing_id_card'] == False) and document['Role']!='Unidentified':  # Check ID card status
                 non_id_holders.append(document)
 
         # Debugging (Optional)
-        print(f"Outsiders: {outsiders}\n")
-        print(f"Non-ID Holders: {non_id_holders}\n")
+        # print(f"Outsiders: {outsiders}\n")
+        # print(f"Non-ID Holders: {non_id_holders}\n")
         
     except Exception as e:
         # Handle any database-related errors gracefully
@@ -90,6 +91,18 @@ def detection_view(request):
         'outsiders': outsiders,
         'non_id_holders': non_id_holders
     })
+
+@csrf_exempt  # Use this only if you want to bypass CSRF checks for this view
+def delete_db(request):
+    if request.method == 'POST':
+        print("Request received")
+        DB = MongoDBDeleter()
+        deleted_documents = DB.delete_all_documents()
+        DB.close_connection()
+        print("Documents deleted", deleted_documents)
+        
+        return JsonResponse({'deleted_documents': deleted_documents})
+    return JsonResponse({'error': 'Invalid request method.'}, status=400)
 
 def camera_id(request):
     return render(request, 'camera_id.html')
