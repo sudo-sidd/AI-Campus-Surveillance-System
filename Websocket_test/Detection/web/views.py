@@ -29,13 +29,14 @@ def insert_document(request):
     role = 'insider'
     wearing_id_card = input("Is wearing ID card? (true/false): ").strip().lower() == 'false'
     image = {}  # Replace with actual image data if available, or leave as empty dict
+    time = datetime.now().strftime("%I:%M %p")
 
     # Generate random _id and get current time
     document = {
         "_id": ObjectId(),  # Generate a random ObjectId
         "Reg_no": reg_no,
         "location": location,
-        "time": datetime.now(timezone.utc),  # Use current UTC time
+        "time": time,  # Use current UTC time
         "Role": role,
         "Wearing_id_card": wearing_id_card,
         "image": image

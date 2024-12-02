@@ -48,6 +48,7 @@
             <table id="outsidersTable" class="table table-bordered text-center">
                 <thead>
                     <tr>
+                        <th>S.No</th>
                         <th>Image</th>
                         <th>ID Card Wearing Status</th>
                         <th>Time</th>
@@ -57,6 +58,7 @@
                 <tbody id="outsidersTableBody">
                     {% for outsider in outsiders %}
                     <tr>
+                        <td>{{ forloop.counter }}</td>
                         <td>
                             {% if outsider.image %}
                                 <img src="{% static outsider.image %}" alt="Outsider Image" style="width: 100px;" class="clickable-image" onclick="openModal('{% static outsider.image %}')">
@@ -78,6 +80,7 @@
             <table id="idDetectionTable" class="table table-bordered text-center">
                 <thead>
                     <tr>
+                        <th>S.No</th>
                         <th>Image</th>
                         <th>ID Card Wearing Status</th>
                         <th>Time</th>
@@ -88,6 +91,7 @@
                 <tbody id="idDetectionTableBody">
                     {% for non_id_holder in non_id_holders %}
                     <tr>
+                        <td>{{ forloop.counter }}</td>
                         <td>
                             {% if non_id_holder.image %}
                                 <img src="{% static non_id_holder.image %}" alt="Non-ID Holder Image" style="width: 100px;" class="clickable-image" onclick="openModal('{% static non_id_holder.image %}')">
