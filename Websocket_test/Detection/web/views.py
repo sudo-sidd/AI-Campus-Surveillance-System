@@ -169,3 +169,9 @@ def get_camera_ip(camera_id):
     if 0 <= camera_id < len(camera_data):
         return camera_data[camera_id].get("camera_ip")
     return None
+
+def camera_fullscreen(request):
+    # Get the camera ID from the URL
+    camera_id = request.GET.get('camera')
+    if camera_id:
+        return render(request, 'fullscreen.html', {'camera_id': camera_id})
