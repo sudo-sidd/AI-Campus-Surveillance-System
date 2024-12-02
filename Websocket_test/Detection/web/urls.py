@@ -9,4 +9,5 @@ urlpatterns = [
     path('api/cameras/', views.get_data, name='camera_data'),
     path('save-data/', views.save_data_view, name='save_data'),
     path('delete-data/<int:index>/', views.delete_data, name='delete_data'),
+    path('clear_database/',views.delete_db, name="clear_database")
 ]   
