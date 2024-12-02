@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from ultralytics import YOLO
 from torchvision import transforms
-from .FaceTracker import FaceTracker
+from .FaceTraacker_test import FaceTracker
 from .face_recognition.arcface.model import iresnet_inference
 from .face_recognition.arcface.utils import compare_encodings, read_features
 import os
@@ -105,7 +105,8 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
     # Draw bounding boxes and labels
     for data in face_tracker.get_tracked_faces():
         x1, y1, x2, y2 = data["box"]
-        color = (0, 255, 0) if data["state"].startswith("SIETIAN") else (0, 0, 255)
+        color = (0, 255, 0) if (data["state"] == 'UNKNOWN') else (0, 0, 255)
+        color = (255, 0, 0) if (data["state"] == 'PENDING') else (0, 0, 255)
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame, data["state"], (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 

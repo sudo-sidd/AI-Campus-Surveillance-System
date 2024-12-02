@@ -1,13 +1,5 @@
 [
     {
-        "camera_ip": "rtsp://aiml:Siet@2727@192.168.3.183:554/Streaming/Channels/101",
-        "camera_location": "corridor"
-    },
-    {
-        "camera_ip": "rtsp://aiml:Siet@2727@192.168.3.148:554/Streaming/Channels/101",
-        "camera_location": "lh-32"
-    },
-    {
         "camera_ip": 0,
         "camera_location": "webcam"
     }
