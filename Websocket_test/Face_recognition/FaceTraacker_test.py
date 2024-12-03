@@ -93,43 +93,6 @@ class FaceTracker:
             timestamps.pop(0)
             detections.pop(0)
 
-    # def update_states(self, current_time):
-    #     """
-    #     Update face states based on detection history at intervals.
-    #     """
-    #     if current_time - self.last_update_time < self.update_interval:
-    #         return  # Update states only every few seconds
-    #
-    #     self.last_update_time = current_time  # Update the last update time
-    #
-    #     for face_id, data in list(self.tracker.items()):
-    #         # Remove faces not seen for too long
-    #         if current_time - data["last_seen"] > self.timeout:
-    #             del self.tracker[face_id]
-    #             continue
-    #
-    #         # Evaluate the detection history and select the most frequent result after multiple detections
-    #         if len(data["history"]) >= 3:
-    #             # Evaluate the detection history and select the most frequent result
-    #             count = Counter(data["history"])
-    #             most_common_detection, _ = count.most_common(1)[0]
-    #
-    #             # If the most common detection is different from the current state, update it
-    #             if most_common_detection != data["state"]:
-    #                 # Update state only if the detection persists over 3 detection windows (9 seconds)
-    #                 data["state"] = most_common_detection
-    #
-    #         # Calculate state based on detection history
-    #         total_detections = len(data["detections"])
-    #         if total_detections > 0:
-    #             # Count the occurrences of each detection result (including names)
-    #             count = Counter(data["detections"])
-    #             most_common_detection, _ = count.most_common(1)[0]
-    #
-    #             # If the most common detection is different than the current state, update it
-    #             if most_common_detection != data["state"]:
-    #                 data["state"] = most_common_detection
-
     def update_states(self, current_time):
         """
         Update face states based on detection history at intervals.

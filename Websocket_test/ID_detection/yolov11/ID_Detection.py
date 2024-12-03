@@ -102,22 +102,3 @@ def detect_id_card(frame):
     tracked_persons = updated_tracked_persons
 
     return frame, persons, association_status
-#
-# if __name__ == "__main__":
-#     # cap = cv2.VideoCapture()  # Replace with video file if needed
-#     # while cap.isOpened():
-#     #     ret, frame = cap.read()
-#     #     if not ret:
-#     #         break
-#     #
-#     #     annotated_frame = process_frame(frame)
-#     #     cv2.imshow("Face Recognition", annotated_frame)
-#     #
-#     #     if cv2.waitKey(1) & 0xFF == ord("q"):
-#     #         break
-#     #
-#     # cap.release()
-#     img = cv2.imread("/run/media/drackko/022df0a1-27b0-4c14-ad57-636776986ded/drackko/PycharmProjects/Face_rec-ID_detection/WebApp/Detection/Face_recognition/test.jpg")
-#     annotated_frame,_,_ = detect_id_card(img)
-#     cv2.imwrite("op.jpg",annotated_frame)
-#

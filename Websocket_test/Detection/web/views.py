@@ -8,7 +8,6 @@ import os
 from django.views.decorators.csrf import csrf_exempt
 from Detection.settings import STATIC_ROOT
 import requests
-from .DBDetetion import MongoDBDeleter
 
 def my_view(request):
     db = get_database()

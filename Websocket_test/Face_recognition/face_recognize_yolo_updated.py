@@ -105,8 +105,13 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
     # Draw bounding boxes and labels
     for data in face_tracker.get_tracked_faces():
         x1, y1, x2, y2 = data["box"]
-        color = (0, 255, 0) if (data["state"] == 'UNKNOWN') else (0, 0, 255)
-        color = (255, 0, 0) if (data["state"] == 'PENDING') else (0, 0, 255)
+        if (data["state"] == 'UNKNOWN'):
+            color = (0, 0, 255)
+        if (data["state"] == 'PENDING'):
+            color = (255, 0, 0)
+        if data["state"].startswith("SIETIAN"):
+            color = (0 , 255, 0)
+
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame, data["state"], (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
