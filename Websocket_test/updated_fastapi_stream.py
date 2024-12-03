@@ -70,7 +70,7 @@ def capture_frame(camera_index, camera_ip):
         print(f"Failed to open camera {camera_index} at {camera_ip}")
         return
 
-    save_interval = 2.0  # Save interval in seconds
+    save_interval = 4.0  # Save interval in seconds
     frame_count = 0
 
     while True:

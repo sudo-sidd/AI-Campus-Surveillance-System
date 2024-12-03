@@ -34,6 +34,8 @@ class Person(models.Model):
     # Custom Time field (using current UTC time)
     time = models.DateTimeField(default=now)
 
+    person_id = models.CharField(max_length=24)
+
     class Meta:
         db_table = 'DetectionDB'  # Specify collection/table name for MongoDB or relational DB
 
