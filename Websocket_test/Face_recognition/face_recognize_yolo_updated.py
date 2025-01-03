@@ -9,6 +9,7 @@ from .face_recognition.arcface.model import iresnet_inference
 from .face_recognition.arcface.utils import compare_encodings, read_features
 import os
 import time
+import logging
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,13 +29,6 @@ recognizer = iresnet_inference(
     device=device,
 )
 
-# # Preloaded face embeddings and names
-# images_names, images_embs = read_features(
-#     feature_path=os.path.join(
-#         BASE_DIR, "datasets", "face_features", "arcface100_featureALL"
-#     )
-# )
-
 feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
 
 # Construct paths for the two .npy files
@@ -52,21 +46,32 @@ face_preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
 ])
 
+# Configure logging
+logging.basicConfig(
+    filename="face_recognition.log",  # Log file
+    level=logging.INFO,                # Logging level
+    format="%(asctime)s - %(levelname)s - %(message)s"
+)
+
+# Modified functions with logging
 
 def get_face_embedding(face_image):
     """Extract features for a given face image."""
     face_image = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
     face_tensor = face_preprocess(face_image).unsqueeze(0).to(device)
     emb = recognizer(face_tensor).cpu().detach().numpy()
-    return emb / np.linalg.norm(emb)
-
+    emb_normalized = emb / np.linalg.norm(emb)
+    logging.debug("Face embedding extracted successfully.")
+    return emb_normalized
 
 def face_rec(face_image):
     """Match face image against known embeddings."""
     query_emb = get_face_embedding(face_image)
     score, id_min = compare_encodings(query_emb, images_embs)
+    if score < 0.5:
+        logging.warning(f"Low confidence score: {score} for detected face.")
+    logging.info(f"Recognition outcome: {'Match' if score > 0.5 else 'No Match'}, Score: {score}")
     return score, images_names[id_min] if score > 0.5 else None
-
 
 def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
     """Check if a face bounding box is within a person bounding box."""
@@ -76,13 +81,15 @@ def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
     y2 = min(face_box[3], person_box[3])
 
     if x2 <= x1 or y2 <= y1:
+        logging.debug("No overlap between face and person box.")
         return False
 
     face_area = (face_box[2] - face_box[0]) * (face_box[3] - face_box[1])
     intersection_area = (x2 - x1) * (y2 - y1)
 
-    return intersection_area / face_area > iou_threshold
-
+    iou = intersection_area / face_area
+    logging.info(f"IOU: {iou} for face and person box.")
+    return iou > iou_threshold
 
 def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
     current_time = time.time()
@@ -90,14 +97,20 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
     # YOLO face detection
     face_results = yolo_model.predict(frame, conf=0.7)
     face_boxes = [list(map(int, bbox)) for result in face_results for bbox in result.boxes.xyxy]
+    logging.info(f"Detected {len(face_boxes)} face(s) in the frame.")
 
     # Update each detected face
     for face_box in face_boxes:
         x1, y1, x2, y2 = face_box
         cropped_face = frame[y1:y2, x1:x2]
-        score, name = face_rec(cropped_face)
-        detection = f"SIETIAN {name}" if name else "UNKNOWN"
-        face_tracker.update_face(face_box, detection, current_time)
+
+        try:
+            score, name = face_rec(cropped_face)
+            detection = f"SIETIAN {name}" if name else "UNKNOWN"
+            face_tracker.update_face(face_box, detection, current_time)
+            logging.info(f"Face detected: {detection} with score {score}.")
+        except Exception as e:
+            logging.error(f"Error during face recognition: {e}")
 
     # Update face states periodically
     face_tracker.update_states(current_time)
@@ -105,12 +118,12 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
     # Draw bounding boxes and labels
     for data in face_tracker.get_tracked_faces():
         x1, y1, x2, y2 = data["box"]
-        if (data["state"] == 'UNKNOWN'):
+        if data["state"] == 'UNKNOWN':
             color = (0, 0, 255)
-        if (data["state"] == 'PENDING'):
+        if data["state"] == 'PENDING':
             color = (255, 0, 0)
         if data["state"].startswith("SIETIAN"):
-            color = (0 , 255, 0)
+            color = (0, 255, 0)
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame, data["state"], (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)

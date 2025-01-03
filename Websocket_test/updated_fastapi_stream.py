@@ -10,7 +10,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 from datetime import datetime
 from pathlib import Path
-from Face_recognition.face_recognize_yolo_updated import recognize_faces_in_persons
+from Face_recognition.face_recognize_yolo import recognize_faces_in_persons
 from Face_recognition.FaceTracker import FaceTracker
 from ID_detection.yolov11.ID_Detection import detect_id_card
 from Detection.Detection.settings import STATIC_ROOT
