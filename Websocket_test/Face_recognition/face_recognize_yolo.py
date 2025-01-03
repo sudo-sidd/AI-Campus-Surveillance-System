@@ -1,15 +1,14 @@
-
 import cv2
 import numpy as np
 import torch
 from ultralytics import YOLO
 from torchvision import transforms
-from .FaceTracker import FaceTracker
+from .FaceTraacker_test import FaceTracker
 from .face_recognition.arcface.model import iresnet_inference
 from .face_recognition.arcface.utils import compare_encodings, read_features
+from .face_alignment.alignment import norm_crop  # Import your alignment function
 import os
 import time
-
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -28,13 +27,6 @@ recognizer = iresnet_inference(
     device=device,
 )
 
-# # Preloaded face embeddings and names
-# images_names, images_embs = read_features(
-#     feature_path=os.path.join(
-#         BASE_DIR, "datasets", "face_features", "arcface100_featureALL"
-#     )
-# )
-
 feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
 
 # Construct paths for the two .npy files
@@ -44,7 +36,6 @@ images_emb_path = os.path.join(feature_path, "images_emb.npy")
 images_names = np.load(images_name_path)
 images_embs = np.load(images_emb_path)
 
-
 # Preprocessing for ArcFace input
 face_preprocess = transforms.Compose([
     transforms.ToTensor(),
@@ -52,21 +43,26 @@ face_preprocess = transforms.Compose([
     transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
 ])
 
-
-def get_face_embedding(face_image):
+def get_face_embedding(face_image, landmarks):
     """Extract features for a given face image."""
-    face_image = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
-    face_tensor = face_preprocess(face_image).unsqueeze(0).to(device)
+    # Align the face using the landmarks
+    aligned_face = norm_crop(face_image, landmarks)
+
+    # Convert the aligned face to RGB
+    aligned_face = cv2.cvtColor(aligned_face, cv2.COLOR_BGR2RGB)
+
+    # Preprocess the aligned face
+    face_tensor = face_preprocess(aligned_face).unsqueeze(0).to(device)
+
+    # Generate embedding
     emb = recognizer(face_tensor).cpu().detach().numpy()
     return emb / np.linalg.norm(emb)
 
-
-def face_rec(face_image):
+def face_rec(face_image, landmarks):
     """Match face image against known embeddings."""
-    query_emb = get_face_embedding(face_image)
+    query_emb = get_face_embedding(face_image, landmarks)
     score, id_min = compare_encodings(query_emb, images_embs)
     return score, images_names[id_min] if score > 0.5 else None
-
 
 def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
     """Check if a face bounding box is within a person bounding box."""
@@ -83,7 +79,6 @@ def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
 
     return intersection_area / face_area > iou_threshold
 
-
 def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
     current_time = time.time()
 
@@ -95,7 +90,24 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
     for face_box in face_boxes:
         x1, y1, x2, y2 = face_box
         cropped_face = frame[y1:y2, x1:x2]
-        score, name = face_rec(cropped_face)
+
+        # Detect landmarks
+        from mtcnn import MTCNN
+        landmark_detector = MTCNN()
+        landmarks = landmark_detector.detect_faces(cropped_face)
+        if not landmarks:
+            continue
+        keypoints = landmarks[0]["keypoints"]
+        face_landmarks = np.array([
+            keypoints["left_eye"],
+            keypoints["right_eye"],
+            keypoints["nose"],
+            keypoints["mouth_left"],
+            keypoints["mouth_right"],
+        ])
+
+        # Perform face recognition
+        score, name = face_rec(cropped_face, face_landmarks)
         detection = f"SIETIAN {name}" if name else "UNKNOWN"
         face_tracker.update_face(face_box, detection, current_time)
 
@@ -105,7 +117,13 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
     # Draw bounding boxes and labels
     for data in face_tracker.get_tracked_faces():
         x1, y1, x2, y2 = data["box"]
-        color = (0, 255, 0) if data["state"].startswith("SIETIAN") else (0, 0, 255)
+        if (data["state"] == 'UNKNOWN'):
+            color = (0, 0, 255)
+        if (data["state"] == 'PENDING'):
+            color = (255, 0, 0)
+        if data["state"].startswith("SIETIAN"):
+            color = (0 , 255, 0)
+
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame, data["state"], (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
