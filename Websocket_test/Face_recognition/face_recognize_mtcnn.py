@@ -65,7 +65,7 @@ def face_rec(face_image):
 
 
 def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
-    """Check if a face bounding box is within a person bounding box."""
+    """Check if a face bounding box is within a model bounding box."""
     x1 = max(face_box[0], person_box[0])
     y1 = max(face_box[1], person_box[1])
     x2 = min(face_box[2], person_box[2])
@@ -80,13 +80,13 @@ def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
     return intersection_area / face_area > iou_threshold
 def recognize_faces_in_persons(frame):
     """
-    Detect faces within person bounding boxes and classify them as SIETIAN, UNKNOWN, or UNDETERMINED.
+    Detect faces within model bounding boxes and classify them as SIETIAN, UNKNOWN, or UNDETERMINED.
     Args:
         frame: The video frame to process.
-        person_bboxes: List of person bounding boxes in the format [(x1, y1), (x2, y2)].
+        person_bboxes: List of model bounding boxes in the format [(x1, y1), (x2, y2)].
     Returns:
-        modified_frame: Frame with person bounding boxes and recognition results.
-        states: List of states for each person box - SIETIAN, UNKNOWN, or UNDETERMINED.
+        modified_frame: Frame with model bounding boxes and recognition results.
+        states: List of states for each model box - SIETIAN, UNKNOWN, or UNDETERMINED.
     """
     # Detect faces using YOLO (or another detector)
     face_results = mtcnn_detector.detect_faces(frame)
@@ -122,7 +122,7 @@ def recognize_faces_in_persons(frame):
                     )
 
 
-        # If no face is detected in the person box
+        # If no face is detected in the model box
 
 
     return frame

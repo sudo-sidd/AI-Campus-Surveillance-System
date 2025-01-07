@@ -65,7 +65,7 @@ def detect_id_card(frame):
                 associated_id_card = id_class_name
                 break
 
-        # Check if this person was already being tracked
+        # Check if this model was already being tracked
         for person_id, data in tracked_persons.items():
             prev_box, start_time, prev_id_card = data
             if boxes_overlap(prev_box, person):
@@ -77,10 +77,10 @@ def detect_id_card(frame):
                 )
                 break
         else:
-            # Start tracking new person
+            # Start tracking new model
             updated_tracked_persons[len(updated_tracked_persons)] = (person, current_time, associated_id_card)
 
-    # Determine final status for each tracked person
+    # Determine final status for each tracked model
     association_status = []
 
     for person_id, data in updated_tracked_persons.items():

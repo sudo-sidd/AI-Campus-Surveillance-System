@@ -1,2 +1,0 @@
-https://drive.google.com/drive/folders/1OcJlFbz890sq1VWjyUmzcxoESVT9oRFn?usp=sharing
-download the modal weights from the drive and place them in the correct paths
