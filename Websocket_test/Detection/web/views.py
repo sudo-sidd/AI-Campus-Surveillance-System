@@ -85,6 +85,9 @@ def detection_view(request):
         outsiders = []
         non_id_holders = []
 
+    outsiders = outsiders[::-1]
+    non_id_holders = non_id_holders[::-1]
+    
     # Render the template with categorized data
     return render(request, 'detection.html', {
         'outsiders': outsiders,
