@@ -111,7 +111,7 @@ def add_persons(backup_dir, add_persons_dir, faces_save_dir, features_path):
         process_person_images(add_persons_dir, name_person, faces_save_dir, images_name, images_emb)
 
     if not images_emb and not images_name:
-        print("No new person found!")
+        print("No new model found!")
         return None
 
     images_emb = np.array(images_emb)
@@ -139,11 +139,11 @@ def add_persons(backup_dir, add_persons_dir, faces_save_dir, features_path):
         for file in os.listdir(add_persons_dir):
             shutil.move(os.path.join(add_persons_dir, file), backup_person_dir)
 
-    print("Successfully added new person!")
+    print("Successfully added new model!")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Add new persons to the face recognition database.")
-    parser.add_argument("--backup-dir", type=str, default="./datasets/backup", help="Directory to save person data.")
+    parser.add_argument("--backup-dir", type=str, default="./datasets/backup", help="Directory to save model data.")
     parser.add_argument("--add-persons-dir", type=str, default="./datasets/new_persons", help="Directory to add new persons.")
     parser.add_argument("--faces-save-dir", type=str, default="./datasets/data/", help="Directory to save faces.")
     parser.add_argument("--features-path", type=str, default="./datasets/face_features/feature", help="Path to save face features.")

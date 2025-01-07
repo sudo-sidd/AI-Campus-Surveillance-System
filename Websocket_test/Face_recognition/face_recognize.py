@@ -59,7 +59,7 @@ def load_config(file_name):
 
 
 def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
-    """Check if face box is within person box"""
+    """Check if face box is within model box"""
     x1 = max(face_box[0], person_box[0])
     y1 = max(face_box[1], person_box[1])
     x2 = min(face_box[2], person_box[2])
@@ -111,10 +111,10 @@ def process_tracking(frame, tracker, args, fps):
 @torch.no_grad()
 def recognize_face(frame, person_boxes):
     """
-    Process frame for face recognition within person boxes.
+    Process frame for face recognition within model boxes.
     Returns:
     - Modified frame with annotations.
-    - List of flags corresponding to person boxes.
+    - List of flags corresponding to model boxes.
     """
 
     global frame_id  # Use global frame_id to maintain state across calls
@@ -122,15 +122,15 @@ def recognize_face(frame, person_boxes):
     # Process tracking and increment frame_id
     tracking_data = process_tracking(frame, tracker, config_tracking, fps=30)
 
-    # Initialize flags for each person
+    # Initialize flags for each model
     flags = ['UNKNOWN'] * len(person_boxes)  # Default to 'UNKNOWN'
 
-    # Draw person boxes
+    # Draw model boxes
     for i, person_box in enumerate(person_boxes):
         cv2.rectangle(frame,
                       (int(person_box[0]), int(person_box[1])),
                       (int(person_box[2]), int(person_box[3])),
-                      (0, 255, 0), 2)  # Green for person boxes
+                      (0, 255, 0), 2)  # Green for model boxes
 
     # If no faces detected, return original frame and empty flags
     if len(tracking_data["tracking_bboxes"]) == 0:
@@ -143,7 +143,7 @@ def recognize_face(frame, person_boxes):
         for j, (det_box, landmark) in enumerate(zip(tracking_data["detection_bboxes"],
                                                     tracking_data["detection_landmarks"])):
             if mapping_bbox(face_box, det_box) > 0.9:
-                # Check which person box this face belongs to
+                # Check which model box this face belongs to
                 for person_idx, person_box in enumerate(person_boxes):
                     if is_face_in_person_box(face_box, person_box):
                         # Align and recognize face

@@ -3,9 +3,9 @@ import numpy as np
 import torch
 from ultralytics import YOLO
 from torchvision import transforms
-from .FaceTraacker_test import FaceTracker
+from Websocket_test.Face_recognition.face_tracker.FaceTracker_test import FaceTracker
 from .face_recognition.arcface.model import iresnet_inference
-from .face_recognition.arcface.utils import compare_encodings, read_features
+from .face_recognition.arcface.utils import compare_encodings
 from .face_alignment.alignment import norm_crop  # Import your alignment function
 import os
 import time
@@ -65,7 +65,7 @@ def face_rec(face_image, landmarks):
     return score, images_names[id_min] if score > 0.5 else None
 
 def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
-    """Check if a face bounding box is within a person bounding box."""
+    """Check if a face bounding box is within a model bounding box."""
     x1 = max(face_box[0], person_box[0])
     y1 = max(face_box[1], person_box[1])
     x2 = min(face_box[2], person_box[2])
@@ -127,7 +127,7 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
         cv2.putText(frame, data["state"], (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
 
-    # Check person boxes
+    # Check model boxes
     states = ["UNDETERMINED"] * len(person_bboxes)
     for idx, person_box in enumerate(person_bboxes):
         for data in face_tracker.get_tracked_faces():
