@@ -3,9 +3,8 @@ import cv2
 from ultralytics import YOLO
 import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-yolo_path = os.path.join(BASE_DIR, "model", "best.pt")
+yolo_path = "model/best.pt"
 
 # Initialize YOLO with the tracking model
 yolo = YOLO(yolo_path)
