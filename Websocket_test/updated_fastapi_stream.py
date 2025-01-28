@@ -108,7 +108,6 @@ def save_detections(people_data, camera_location):
         os.makedirs(IMAGE_FOLDER_PATH, exist_ok=True)
         cv2.imwrite(image_path, person['bbox'])
 
-        person_id = tuple(person['bbox'])
         existing_document = collection.find_one({"track_id": person['track_id']})
 
         if existing_document:

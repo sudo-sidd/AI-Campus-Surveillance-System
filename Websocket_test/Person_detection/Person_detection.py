@@ -1,7 +1,9 @@
 import cv2
 from ultralytics import YOLO
+import os
 
-yolo_path = "model/best.pt"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+yolo_path = os.path.join(BASE_DIR,"model", "person_detection.pt")
 
 yolo = YOLO(yolo_path)
 
@@ -36,7 +38,7 @@ def track_persons(frame):
     }
 
 
-
+#
 # frame = cv2.imread('ppl1.jpg')
 #
 # results = track_persons(frame)

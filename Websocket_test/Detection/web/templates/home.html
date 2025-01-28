@@ -26,7 +26,7 @@
             position: fixed;
             z-index: 999;
             top: 0;
-            left: 0;
+            right: 0;
             background-color: #111;
             overflow-x: hidden;
             transition: 0.5s;
@@ -82,11 +82,19 @@
         </div>
     </header>
 
-    <!-- Camera Grid Section -->
-    <!-- <div class="container my-5">
-        <h2 class="text-center text-success mb-4">Live Camera Streams</h2>
-        <div id="cameraGrid" class="row justify-content-center"></div>
-    </div> -->
+    <!-- Navigation Links -->
+    <div class="text-center my-4">
+        <a href="{% url 'detection' %}" class="btn btn-success mx-2">Detection Report</a>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="settingsSidebar" class="sidebar">
+        <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">×</a>
+        <a href="{% url 'camera_id' %}">Add / Remove Camera's</a>
+        <!-- make the button for clear db when user click it, it wants to show pop up -->
+        <a href="" onclick="cleardb()">Clear DB</a>
+    </div>
+
     <div class="container mt-5">
         <div class="row" id="cameraGrid">
             <!-- Camera grid will be dynamically loaded here -->
@@ -107,31 +115,6 @@
         </div>
     </div>
 
-
-    <!-- Modal for Full-Screen Camera View -->
-    <!-- Fullscreen Modal for Camera
-    <div class="modal fade" id="fullscreenModal" tabindex="-1" role="dialog" aria-labelledby="fullscreenModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-fullscreen" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="fullscreenModalLabel">Full Screen Camera</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              <img id="fullscreenVideo" src="" class="img-fluid">
-            </div>
-          </div>
-        </div>
-      </div> -->
-
-
-    <!-- Navigation Links -->
-    <div class="text-center my-4">
-        <a href="{% url 'detection' %}" class="btn btn-success mx-2">Detection Report</a>
-    </div>
-
     <!-- Footer Section -->
     <footer class="bg-light py-4">
         <div class="container text-center">
@@ -143,20 +126,12 @@
         </div>
     </footer>
 
-    <!-- Sidebar -->
-    <div id="settingsSidebar" class="sidebar">
-        <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">×</a>
-        <a href="{% url 'camera_id' %}">Add / Remove Camera's</a>
-        <!-- make the button for clear db when user click it, it wants to show pop up -->
-        <a href="" onclick="cleardb()">Clear DB</a>
-    </div>
 
     <!-- Scripts -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script> <!-- Full jQuery for compatibility -->
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <!-- <script src="{% static 'JS/home.js' %}"></script> -->
-    <script src="{% static 'JS/updated_home.js' %}"></script>
+    <script src="{% static 'JS/home.js' %}"></script>
 
     <!-- Sidebar Toggle JavaScript -->
     <script>

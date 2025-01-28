@@ -3,7 +3,6 @@ import numpy as np
 import torch
 from ultralytics import YOLO
 from torchvision import transforms
-from .face_tracker.FaceTracker_test import FaceTracker
 from .face_recognition.arcface.model import iresnet_inference
 from .face_recognition.arcface.utils import compare_encodings
 from .face_alignment.alignment import norm_crop
@@ -27,7 +26,7 @@ recognizer = iresnet_inference(
     device=device,
 )
 
-feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
+feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "feature")
 
 # Construct paths for the two .npy files
 images_name_path = os.path.join(feature_path, "images_name.npy")
@@ -79,23 +78,32 @@ def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
 
     return intersection_area / face_area > iou_threshold
 
-def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker, track_ids):
+def recognize_faces_in_persons(frame, person_bboxes, track_ids):
     current_time = time.time()
+    print("\n--- Starting face recognition process ---")
 
     # YOLO face detection
+    start_time = time.time()
     face_results = yolo_model.predict(frame, conf=0.7)
     face_boxes = [list(map(int, bbox)) for result in face_results for bbox in result.boxes.xyxy]
+    print(f"YOLO face detection completed in {time.time() - start_time:.2f} seconds")
+    print(f"Number of faces detected: {len(face_boxes)}")
 
     # Loop through detected faces
-    for face_box, track_id in zip(face_boxes, track_ids):
+    print(np.array(face_boxes).tolist(), track_ids)
+    for i, (face_box, track_id) in enumerate(zip(np.array(face_boxes).tolist(), track_ids)):
+        print(f"\nProcessing face {i + 1}/{len(face_boxes)}")
         x1, y1, x2, y2 = face_box
         cropped_face = frame[y1:y2, x1:x2]
 
         # Detect landmarks
+        start_time = time.time()
         from mtcnn import MTCNN
         landmark_detector = MTCNN()
         landmarks = landmark_detector.detect_faces(cropped_face)
+        print(f"Landmark detection completed in {time.time() - start_time:.2f} seconds")
         if not landmarks:
+            print("No landmarks detected for this face.")
             continue
         keypoints = landmarks[0]["keypoints"]
         face_landmarks = np.array([
@@ -107,19 +115,17 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker, 
         ])
 
         # Perform face recognition
+        start_time = time.time()
         score, name = face_rec(cropped_face, face_landmarks)
+        print(f"Face recognition completed in {time.time() - start_time:.2f} seconds")
+        print(f"Recognition result: {'SIETIAN ' + name if name else 'UNKNOWN'}")
         detection = f"SIETIAN {name}" if name else "UNKNOWN"
-        face_tracker.update_face(face_box, detection, current_time, track_id=track_id)
 
-    # Update face states periodically
-    face_tracker.update_states(current_time)
 
-    # Link face data to `track_id`
+    start_time = time.time()
     states = ["UNDETERMINED"] * len(person_bboxes)
-    for idx, (person_box, track_id) in enumerate(zip(person_bboxes, track_ids)):
-        for data in face_tracker.get_tracked_faces():
-            if is_face_in_person_box(data["box"], person_box) and data["track_id"] == track_id:
-                states[idx] = data["state"]
-                break
+    print(f"Linking face data to track_ids completed in {time.time() - start_time:.2f} seconds")
 
+    print("--- Face recognition process completed ---\n")
     return frame, states
+

@@ -6,8 +6,12 @@ from django.http import HttpResponse, StreamingHttpResponse
 import json
 import os
 from django.views.decorators.csrf import csrf_exempt
-from Detection.settings import STATIC_ROOT
+from Detection.settings import STATIC_ROOT, IP
 import requests
+# from dotenv import dotenv_values
+
+# config = dotenv_values("./.env")
+# IP = config.get("IP")
 
 def my_view(request):
     db = get_database()
@@ -47,6 +51,13 @@ def insert_document(request):
 
 def home(request):
     return render(request, 'home.html')
+
+def get_env_var(request):
+    env_vars = {
+        "IP": IP,
+    }
+    print(env_vars)
+    return JsonResponse(env_vars, safe = False)
 
 def detection_view(request):
     """

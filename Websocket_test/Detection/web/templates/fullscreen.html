@@ -55,10 +55,11 @@
         const cameraId = urlParams.get('camera');
         const cameraFeed = document.getElementById('cameraFeed');
 
-        if (cameraId) {
-            const socketUrl = `ws://192.168.31.96:7000/ws/video/${cameraId}/`;  // WebSocket URL
-            const socket = new WebSocket(socketUrl);
+        const  IP = '192.168.28.34';
 
+        if (cameraId) {
+            const socketUrl = `ws://${IP}:7000/ws/video/${cameraId}/`;  // WebSocket URL
+            const socket = new WebSocket(socketUrl);
             socket.onopen = function () {
                 console.log(`Connected to WebSocket for Camera ${cameraId}`);
             };
