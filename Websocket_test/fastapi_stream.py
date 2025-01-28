@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from Detection.Detection.settings import STATIC_ROOT
 from Person_detection.Person_detection import track_persons
-from ID_detection.yolov11.ID_Detection_test import detect_id_card
+from ID_detection.yolov11.ID_Detection import detect_id_card
 from Face_recognition.face_recognize_yolo import recognize_faces_in_persons
 
 
