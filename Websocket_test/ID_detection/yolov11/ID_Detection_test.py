@@ -1,104 +1,132 @@
 import cv2
 import time
 from ultralytics import YOLO
-
 import os
+import numpy as np
 
 # Get the base directory of the current script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Load the YOLO model with the trained weights (relative path)
-model_path = os.path.join(BASE_DIR,"models", "person+id", "best.pt")
-
+model_path = os.path.join(BASE_DIR, "models", "id-model.pt")
 model = YOLO(model_path)
-# Define colors for different classes
-colors = [(0, 255, 0), (255, 0, 0), (0, 0, 255), (120, 120, 0)]
+
+# Define colors for bounding boxes
+color = (0, 255, 0)
+
+# Tracking data structure
+tracked_items = {}  # Key: ID, Value: {bounding_box, start_time}
 
 # Function to check if two boxes overlap
 def boxes_overlap(box1, box2):
     return not (box1[2] < box2[0] or box1[0] > box2[2] or box1[3] < box2[1] or box1[1] > box2[3])
 
-# Tracking data structure
-tracked_persons = {}  # Key: Person ID, Value: {bounding_box, start_time, id_card_class}
+# Function to apply Non-Maximum Suppression (NMS)
+def apply_nms(boxes, confidences, threshold=0.5):
+    # Convert boxes to np.array and perform NMS
+    boxes = np.array(boxes)
+    confidences = np.array(confidences)
 
+    # Apply NMS (you may need to adjust the IoU threshold to suit your needs)
+    indices = cv2.dnn.NMSBoxes(boxes.tolist(), confidences.tolist(), score_threshold=0.4, nms_threshold=threshold)
+
+    # Filter boxes based on NMS results
+    filtered_boxes = []
+    filtered_confidences = []
+    if len(indices) > 0:
+        for i in indices.flatten():
+            filtered_boxes.append(boxes[i])
+            filtered_confidences.append(confidences[i])
+
+    return filtered_boxes, filtered_confidences
+
+# Function to detect ID card
 def detect_id_card(frame):
-    global tracked_persons
+    global tracked_items
 
     results = model(frame)  # Perform inference with YOLO model
-
     current_time = time.time()
-    persons = []
-    id_cards = []
+    detected_items = []
+    boxes = []
+    confidences = []
 
     # Loop over each detected object in the results
     for result in results[0].boxes:
         # Get bounding box coordinates
         x1, y1, x2, y2 = result.xyxy[0].tolist()
-        class_id = int(result.cls)
-        class_name = results[0].names[class_id]
         confidence = result.conf.item()
 
-        # Store detected persons and ID cards
-        if class_name == 'Person':
-            persons.append((x1, y1, x2, y2))
-        elif class_name in ['II-id', 'III-id']:  # Assuming these are your ID card classes
-            id_cards.append((x1, y1, x2, y2, class_name))
+        # Only process if confidence is 75% or above
+        if confidence >= 0.75:
+            boxes.append([x1, y1, x2, y2])
+            confidences.append(confidence)
 
-        # Draw bounding boxes for all detections
-        # label = f"{class_name} ({confidence:.2f})"
-        label=''
-        color = colors[class_id % len(colors)]
+    # Apply Non-Maximum Suppression to reduce overlapping
+    filtered_boxes, filtered_confidences = apply_nms(boxes, confidences, threshold=0.5)
+
+    # Draw filtered bounding boxes for detections
+    for box, confidence in zip(filtered_boxes, filtered_confidences):
+        x1, y1, x2, y2 = box
+        label = f"ID Card ({confidence:.2f})"
         cv2.rectangle(frame, (int(x1), int(y1)), (int(x2), int(y2)), color, 2)
         cv2.putText(frame, label, (int(x1), int(y1) - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color=color, thickness=2)
 
-    # Associate ID cards with persons
-    updated_tracked_persons = {}
+    # Update tracked items
+    updated_tracked_items = {}
 
-    for person in persons:
-        person_x1, person_y1, person_x2, person_y2 = person
-        associated_id_card = None
+    for item in filtered_boxes:
+        item_x1, item_y1, item_x2, item_y2 = item
 
-        for id_card in id_cards:
-            id_x1, id_y1, id_x2, id_y2, id_class_name = id_card
-
-            if boxes_overlap((id_x1, id_y1, id_x2, id_y2), (person_x1, person_y1, person_x2, person_y2)):
-                associated_id_card = id_class_name
-                break
-
-        # Check if this model was already being tracked
-        for person_id, data in tracked_persons.items():
-            prev_box, start_time, prev_id_card = data
-            if boxes_overlap(prev_box, person):
+        # Check if this item was already being tracked
+        for item_id, data in tracked_items.items():
+            prev_box, start_time = data
+            if boxes_overlap(prev_box, item):
                 # Update tracking info
-                updated_tracked_persons[person_id] = (
-                    person,
-                    start_time,
-                    associated_id_card if associated_id_card else prev_id_card,
-                )
+                updated_tracked_items[item_id] = (item, start_time)
                 break
         else:
-            # Start tracking new model
-            updated_tracked_persons[len(updated_tracked_persons)] = (person, current_time, associated_id_card)
+            # Start tracking new item
+            updated_tracked_items[len(updated_tracked_items)] = (item, current_time)
 
-    # Determine final status for each tracked model
+    # Determine final status for each tracked item
     association_status = []
 
-    for person_id, data in updated_tracked_persons.items():
-        box, start_time, id_card = data
-        if current_time - start_time >= 2:  # Check if tracked for at least 3 seconds
-            if id_card:
-                association_status.append(f"{id_card}")
-            else:
-                association_status.append("None")
+    for item_id, data in updated_tracked_items.items():
+        box, start_time = data
+        if current_time - start_time >= 2:  # Check if tracked for at least 2 seconds
+            association_status.append("ID Card Detected")
         else:
-            association_status.append(f"Waiting for confirmation...")
+            association_status.append("Waiting for confirmation...")
 
         # Draw updated bounding boxes with status
         x1, y1, x2, y2 = map(int, box)
-        color = (0, 255, 255) if id_card else (0, 0, 255)
-        cv2.putText(frame, association_status[-1], (x1, y1 - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
+        status_color = (0, 255, 255) if current_time - start_time >= 2 else (0, 0, 255)
+        cv2.putText(frame, association_status[-1], (x1, y1 - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, status_color, 2)
 
-    # Update tracked persons for the next frame
-    tracked_persons = updated_tracked_persons
+    # Update tracked items for the next frame
+    tracked_items = updated_tracked_items
 
-    return frame, persons, association_status
+    return frame, association_status
+#
+# # Open webcam (camera ID 0)
+# cap = cv2.VideoCapture(2)
+#
+# while True:
+#     ret, frame = cap.read()
+#     if not ret:
+#         print("Failed to capture frame. Exiting...")
+#         break
+#
+#     # Run detection on the frame
+#     frame, association_status = detect_id_card(frame)
+#
+#     # Show the frame with bounding boxes and status
+#     cv2.imshow("ID Card Detection", frame)
+#
+#     # Exit the loop when the user presses 'q'
+#     if cv2.waitKey(1) & 0xFF == ord('q'):
+#         break
+#
+# # Release the camera and close all OpenCV windows
+# cap.release()
+# cv2.destroyAllWindows()
