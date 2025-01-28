@@ -26,7 +26,7 @@ recognizer = iresnet_inference(
     device=device,
 )
 
-feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "feature")
+feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
 
 # Construct paths for the two .npy files
 images_name_path = os.path.join(feature_path, "images_name.npy")
@@ -78,54 +78,51 @@ def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
 
     return intersection_area / face_area > iou_threshold
 
-def recognize_faces_in_persons(frame, person_bboxes, track_ids):
-    current_time = time.time()
-    print("\n--- Starting face recognition process ---")
 
-    # YOLO face detection
+def recognize_faces_in_persons(person_image, track_id):
+
+    current_time = time.time()
+    print(f"\n--- Starting face recognition for track_id: {track_id} ---")
+
+    # YOLO face detection on the person image
     start_time = time.time()
-    face_results = yolo_model.predict(frame, conf=0.7)
+    face_results = yolo_model.predict(person_image, conf=0.7)
+    print("Face result obtained")
     face_boxes = [list(map(int, bbox)) for result in face_results for bbox in result.boxes.xyxy]
     print(f"YOLO face detection completed in {time.time() - start_time:.2f} seconds")
     print(f"Number of faces detected: {len(face_boxes)}")
 
-    # Loop through detected faces
-    print(np.array(face_boxes).tolist(), track_ids)
-    for i, (face_box, track_id) in enumerate(zip(np.array(face_boxes).tolist(), track_ids)):
-        print(f"\nProcessing face {i + 1}/{len(face_boxes)}")
-        x1, y1, x2, y2 = face_box
-        cropped_face = frame[y1:y2, x1:x2]
+    # If no faces are detected, return UNKNOWN
+    if not face_boxes:
+        print(f"No faces detected for track_id: {track_id}")
+        return "UNKNOWN"
 
-        # Detect landmarks
-        start_time = time.time()
-        from mtcnn import MTCNN
-        landmark_detector = MTCNN()
-        landmarks = landmark_detector.detect_faces(cropped_face)
-        print(f"Landmark detection completed in {time.time() - start_time:.2f} seconds")
-        if not landmarks:
-            print("No landmarks detected for this face.")
-            continue
-        keypoints = landmarks[0]["keypoints"]
-        face_landmarks = np.array([
-            keypoints["left_eye"],
-            keypoints["right_eye"],
-            keypoints["nose"],
-            keypoints["mouth_left"],
-            keypoints["mouth_right"],
-        ])
+    # Take the first detected face (if multiple)
+    face_box = face_boxes[0]
+    x1, y1, x2, y2 = face_box
+    cropped_face = person_image[y1:y2, x1:x2]
 
-        # Perform face recognition
-        start_time = time.time()
-        score, name = face_rec(cropped_face, face_landmarks)
-        print(f"Face recognition completed in {time.time() - start_time:.2f} seconds")
-        print(f"Recognition result: {'SIETIAN ' + name if name else 'UNKNOWN'}")
-        detection = f"SIETIAN {name}" if name else "UNKNOWN"
+    # Perform face recognition
+    try:
+        # Detect landmarks using face alignment (if needed)
+        landmarks = [
+            [x1, y1],
+            [x2, y1],
+            [x1 + (x2 - x1) // 2, y1 + (y2 - y1) // 3],
+            [x1, y2],
+            [x2, y2],
+        ]
 
+        # Generate face embedding using ArcFace
+        query_emb = get_face_embedding(cropped_face, landmarks)
 
-    start_time = time.time()
-    states = ["UNDETERMINED"] * len(person_bboxes)
-    print(f"Linking face data to track_ids completed in {time.time() - start_time:.2f} seconds")
+        # Compare with known embeddings
+        score, name = compare_encodings(query_emb, images_embs)
+        person_flag = "SIETIAN" if score > 0.5 else "UNKNOWN"
 
-    print("--- Face recognition process completed ---\n")
-    return frame, states
+        print(f"Recognition result for track_id {track_id}: {person_flag}")
+        return person_flag
 
+    except Exception as e:
+        print(f"Error during face recognition for track_id {track_id}: {e}")
+        return "UNKNOWN"

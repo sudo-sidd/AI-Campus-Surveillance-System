@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from Detection.Detection.settings import STATIC_ROOT
 from Person_detection.Person_detection import track_persons
-from ID_detection.yolov11.ID_Detection import detect_id_card
+from ID_detection.yolov11.ID_Detection_test import detect_id_card
 from Face_recognition.face_recognize_yolo import recognize_faces_in_persons
 
 
@@ -90,8 +90,8 @@ def process_frame(camera_index, camera_ip):
                     person_box = [x1,y1,x2,y2]
                     print(x1, y1, x2, y2,person_box )
 
-                    person_flags, associations = recognize_faces_in_persons(
-                        person_image, person_box, track_id
+                    person_flag = recognize_faces_in_persons(
+                        person_image, track_id
                     )
 
                     print("face detection/recognition successful")
@@ -101,7 +101,7 @@ def process_frame(camera_index, camera_ip):
                     person = {
                         'bbox': person_box,
                         'track_id': track_id,
-                        'face_flag': person_flags,
+                        'face_flag': person_flag,
                         'id_card_status': person_id_card_status
                     }
                     people_data.append(person)
