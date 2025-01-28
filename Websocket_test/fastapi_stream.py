@@ -96,7 +96,7 @@ def process_frame(camera_index, camera_ip):
 
                     print("face detection/recognition successful")
 
-                    person_id_card_status = detect_id_card(person_image)
+                    frame,person_id_card_status = detect_id_card(person_image)
                     print("ID card detection successful")
                     person = {
                         'bbox': person_box,

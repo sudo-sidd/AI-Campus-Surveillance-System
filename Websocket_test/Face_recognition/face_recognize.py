@@ -26,7 +26,7 @@ recognizer = iresnet_inference(
 )
 
 # Load pre-saved face features
-feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "feature")
+feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
 images_name_path = os.path.join(feature_path, "images_name.npy")
 images_emb_path = os.path.join(feature_path, "images_emb.npy")
 images_names = np.load(images_name_path)
@@ -57,7 +57,6 @@ def recognize_face(face_image):
 
 
 def main():
-    # Open camera
     cap = cv2.VideoCapture(0)
 
     if not cap.isOpened():
@@ -74,11 +73,9 @@ def main():
         face_results = yolo_model.predict(frame, conf=0.7)
         for result in face_results:
             for bbox in result.boxes.xyxy:
-                # Extract bounding box and crop face
                 x1, y1, x2, y2 = map(int, bbox[:4])
                 cropped_face = frame[y1:y2, x1:x2]
 
-                # Skip alignment and recognize face directly
                 try:
                     score, name = recognize_face(cropped_face)
 

@@ -1,23 +1,22 @@
 import cv2
 import numpy as np
 import torch
-from ultralytics import YOLO
+import os
 from torchvision import transforms
+from ultralytics import YOLO
 from .face_recognition.arcface.model import iresnet_inference
 from .face_recognition.arcface.utils import compare_encodings
-from .face_alignment.alignment import norm_crop
-import os
-import time
 
+# Get the base directory of the current script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Device configuration
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# YOLO model initialization
-yolo_model = YOLO(os.path.join(BASE_DIR,"face_detection","yolo","weights","yolo11n-face.pt"))
+# Initialize YOLO face detection model
+yolo_model = YOLO(os.path.join(BASE_DIR, "face_detection", "yolo", "weights", "yolo11n-face.pt"))
 
-# ArcFace model initialization
+# Initialize ArcFace recognition model
 recognizer = iresnet_inference(
     model_name="r100",
     path=os.path.join(
@@ -26,103 +25,97 @@ recognizer = iresnet_inference(
     device=device,
 )
 
+# Load pre-saved face features
 feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
-
-# Construct paths for the two .npy files
 images_name_path = os.path.join(feature_path, "images_name.npy")
 images_emb_path = os.path.join(feature_path, "images_emb.npy")
-# Load the .npy files
 images_names = np.load(images_name_path)
 images_embs = np.load(images_emb_path)
 
-# Preprocessing for ArcFace input
-face_preprocess = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Resize((112, 112)),
-    transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
-])
 
-def get_face_embedding(face_image, landmarks):
-    """Extract features for a given face image."""
-    # Align the face using the landmarks
-    aligned_face = norm_crop(face_image, landmarks)
+@torch.no_grad()
+def get_feature(face_image):
+    """Extract features from a face image."""
+    face_preprocess = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Resize((112, 112)),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+    ])
 
-    # Convert the aligned face to RGB
-    aligned_face = cv2.cvtColor(aligned_face, cv2.COLOR_BGR2RGB)
+    face_image = cv2.cvtColor(face_image, cv2.COLOR_BGR2RGB)
+    face_image = face_preprocess(face_image).unsqueeze(0).to(device)
 
-    # Preprocess the aligned face
-    face_tensor = face_preprocess(aligned_face).unsqueeze(0).to(device)
+    emb_img_face = recognizer(face_image).cpu().numpy()
+    return emb_img_face / np.linalg.norm(emb_img_face)
 
-    # Generate embedding
-    emb = recognizer(face_tensor).cpu().detach().numpy()
-    return emb / np.linalg.norm(emb)
 
-def face_rec(face_image, landmarks):
-    """Match face image against known embeddings."""
-    query_emb = get_face_embedding(face_image, landmarks)
+def recognize_face(face_image):
+    """Recognize a face image."""
+    query_emb = get_feature(face_image)
     score, id_min = compare_encodings(query_emb, images_embs)
-    return score, images_names[id_min] if score > 0.5 else None
-
-def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
-    """Check if a face bounding box is within a model bounding box."""
-    x1 = max(face_box[0], person_box[0])
-    y1 = max(face_box[1], person_box[1])
-    x2 = min(face_box[2], person_box[2])
-    y2 = min(face_box[3], person_box[3])
-
-    if x2 <= x1 or y2 <= y1:
-        return False
-
-    face_area = (face_box[2] - face_box[0]) * (face_box[3] - face_box[1])
-    intersection_area = (x2 - x1) * (y2 - y1)
-
-    return intersection_area / face_area > iou_threshold
+    name = images_names[id_min]
+    return score[0], name
 
 
-def recognize_faces_in_persons(person_image, track_id):
+def process_faces(frame):
+    face_results = yolo_model.predict(frame, conf=0.7)
+    labels = []  # To store labels
+    bboxes = []  # To store bounding boxes
 
-    current_time = time.time()
-    print(f"\n--- Starting face recognition for track_id: {track_id} ---")
+    for result in face_results:
+        for bbox in result.boxes.xyxy:
+            x1, y1, x2, y2 = map(int, bbox[:4])
+            cropped_face = frame[y1:y2, x1:x2]
 
-    # YOLO face detection on the person image
-    start_time = time.time()
-    face_results = yolo_model.predict(person_image, conf=0.7)
-    print("Face result obtained")
-    face_boxes = [list(map(int, bbox)) for result in face_results for bbox in result.boxes.xyxy]
-    print(f"YOLO face detection completed in {time.time() - start_time:.2f} seconds")
-    print(f"Number of faces detected: {len(face_boxes)}")
+            try:
+                score, name = recognize_face(cropped_face)
 
-    # If no faces are detected, return UNKNOWN
-    if not face_boxes:
-        print(f"No faces detected for track_id: {track_id}")
-        return "UNKNOWN"
+                if score >= 0.5:
+                    label = f"{name} ({score:.2f})"
+                    color = (255, 0, 255)  # Magenta for recognized
+                else:
+                    label = "UNKNOWN"
+                    color = (0, 165, 255)  # Orange for unknown
 
-    # Take the first detected face (if multiple)
-    face_box = face_boxes[0]
-    x1, y1, x2, y2 = face_box
-    cropped_face = person_image[y1:y2, x1:x2]
+                # Add label and bbox to the lists
+                labels.append((label, (x1, y1)))
+                bboxes.append((x1, y1, x2, y2))
 
-    # Perform face recognition
-    try:
-        # Detect landmarks using face alignment (if needed)
-        landmarks = [
-            [x1, y1],
-            [x2, y1],
-            [x1 + (x2 - x1) // 2, y1 + (y2 - y1) // 3],
-            [x1, y2],
-            [x2, y2],
-        ]
+            except Exception as e:
+                print(f"Error recognizing face: {e}")
+                continue
 
-        # Generate face embedding using ArcFace
-        query_emb = get_face_embedding(cropped_face, landmarks)
-
-        # Compare with known embeddings
-        score, name = compare_encodings(query_emb, images_embs)
-        person_flag = "SIETIAN" if score > 0.5 else "UNKNOWN"
-
-        print(f"Recognition result for track_id {track_id}: {person_flag}")
-        return person_flag
-
-    except Exception as e:
-        print(f"Error during face recognition for track_id {track_id}: {e}")
-        return "UNKNOWN"
+    return labels, bboxes
+#
+#
+# cap = cv2.VideoCapture(0)
+#
+# if not cap.isOpened():
+#     print("Error: Could not open camera.")
+#     exit()
+#
+# while True:
+#     ret, frame = cap.read()
+#     if not ret:
+#         print("Error: Could not read frame.")
+#         break
+#
+#     labels, bboxes = process_faces(frame)
+#
+#     # Draw bounding boxes and labels
+#     for (label, (x1, y1)), (x1, y1, x2, y2) in zip(labels, bboxes):
+#         # Draw bounding box
+#         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+#
+#         # Draw label
+#         cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
+#
+#     # Display the frame
+#     cv2.imshow("Face Recognition", frame)
+#
+#     # Exit if 'q' is pressed
+#     if cv2.waitKey(1) & 0xFF == ord('q'):
+#         break
+#
+# cap.release()
+# cv2.destroyAllWindows()
