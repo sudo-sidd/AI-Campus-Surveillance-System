@@ -6,7 +6,7 @@
       <excludeFolder url="file://$MODULE_DIR$/venv" />
       <excludeFolder url="file://$MODULE_DIR$/Websocket_test/FaceIdDetection/Face_recognition/face_recognition/arcface/weights" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3.12 virtualenv at /mnt/data/Project Environments/Fae-ID_recognition/.venv" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3.12 virtualenv at /mnt/nvme0n1p4/Project Environments/face-rec_id-rec/.venv" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>

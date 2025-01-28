@@ -3,10 +3,10 @@ import numpy as np
 import torch
 from ultralytics import YOLO
 from torchvision import transforms
-from Websocket_test.Face_recognition.face_tracker.FaceTracker_test import FaceTracker
+from .face_tracker.FaceTracker_test import FaceTracker
 from .face_recognition.arcface.model import iresnet_inference
 from .face_recognition.arcface.utils import compare_encodings
-from .face_alignment.alignment import norm_crop  # Import your alignment function
+from .face_alignment.alignment import norm_crop
 import os
 import time
 
@@ -79,15 +79,15 @@ def is_face_in_person_box(face_box, person_box, iou_threshold=0.5):
 
     return intersection_area / face_area > iou_threshold
 
-def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
+def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker, track_ids):
     current_time = time.time()
 
     # YOLO face detection
     face_results = yolo_model.predict(frame, conf=0.7)
     face_boxes = [list(map(int, bbox)) for result in face_results for bbox in result.boxes.xyxy]
 
-    # Update each detected face
-    for face_box in face_boxes:
+    # Loop through detected faces
+    for face_box, track_id in zip(face_boxes, track_ids):
         x1, y1, x2, y2 = face_box
         cropped_face = frame[y1:y2, x1:x2]
 
@@ -109,29 +109,16 @@ def recognize_faces_in_persons(frame, person_bboxes, face_tracker: FaceTracker):
         # Perform face recognition
         score, name = face_rec(cropped_face, face_landmarks)
         detection = f"SIETIAN {name}" if name else "UNKNOWN"
-        face_tracker.update_face(face_box, detection, current_time)
+        face_tracker.update_face(face_box, detection, current_time, track_id=track_id)
 
     # Update face states periodically
     face_tracker.update_states(current_time)
 
-    # Draw bounding boxes and labels
-    for data in face_tracker.get_tracked_faces():
-        x1, y1, x2, y2 = data["box"]
-        if (data["state"] == 'UNKNOWN'):
-            color = (0, 0, 255)
-        if (data["state"] == 'PENDING'):
-            color = (255, 0, 0)
-        if data["state"].startswith("SIETIAN"):
-            color = (0 , 255, 0)
-
-        cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
-        cv2.putText(frame, data["state"], (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
-
-    # Check model boxes
+    # Link face data to `track_id`
     states = ["UNDETERMINED"] * len(person_bboxes)
-    for idx, person_box in enumerate(person_bboxes):
+    for idx, (person_box, track_id) in enumerate(zip(person_bboxes, track_ids)):
         for data in face_tracker.get_tracked_faces():
-            if is_face_in_person_box(data["box"], person_box):
+            if is_face_in_person_box(data["box"], person_box) and data["track_id"] == track_id:
                 states[idx] = data["state"]
                 break
 
