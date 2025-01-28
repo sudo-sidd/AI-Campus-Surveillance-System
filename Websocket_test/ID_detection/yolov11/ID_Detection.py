@@ -8,7 +8,7 @@ import numpy as np
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Load the YOLO model with the trained weights (relative path)
-model_path = os.path.join(BASE_DIR, "models", "id-model.pt")
+model_path = os.path.join(BASE_DIR, "models", "best.pt")
 model = YOLO(model_path)
 
 # Define colors for bounding boxes
@@ -98,16 +98,16 @@ def detect_id_card(frame):
         else:
             association_status.append("Waiting for confirmation...")
 
-        # Draw updated bounding boxes with status
-        x1, y1, x2, y2 = map(int, box)
-        status_color = (0, 255, 255) if current_time - start_time >= 2 else (0, 0, 255)
-        cv2.putText(frame, association_status[-1], (x1, y1 - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, status_color, 2)
+        # # Draw updated bounding boxes with status
+        # x1, y1, x2, y2 = map(int, box)
+        # status_color = (0, 255, 255) if current_time - start_time >= 2 else (0, 0, 255)
+        # cv2.putText(frame, association_status[-1], (x1, y1 - 20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, status_color, 2)
 
     # Update tracked items for the next frame
     tracked_items = updated_tracked_items
 
-    return frame, association_status
-#
+    return association_status
+
 # # Open webcam (camera ID 0)
 # cap = cv2.VideoCapture(2)
 #

@@ -7,34 +7,34 @@ yolo_path = os.path.join(BASE_DIR,"model", "person_detection.pt")
 
 yolo = YOLO(yolo_path)
 
-def draw_track(frame, track):
-    bbox = track['bbox']
-    track_id = track['id']
-    x1, y1, x2, y2 = map(int, bbox)
-
-    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
-
-    text = f'ID: {track_id}'
-    (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)
-    cv2.rectangle(frame, (x1, y1 - 30), (x1 + text_width, y1), (255, 255, 255), -1)
-    cv2.putText(frame, text, (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
-
 def track_persons(frame):
-
-    results = yolo.track(frame, persist=True)
+    # Run YOLO tracking
+    results = yolo.track(frame, persist=True, iou=0.5, conf=0.5)
 
     if not results[0].boxes:
         return {"modified_frame": frame, "person_boxes": [], "track_ids": []}
 
-    modified_frame = results[0].plot()
-    person_bboxes = results[0].boxes.xywh.cpu().numpy()  # Bounding boxes
+    # Get frame dimensions
+    frame_height, frame_width = frame.shape[:2]
+
+    # Bounding boxes (normalized or scaled by YOLO during processing)
+    person_bboxes = results[0].boxes.xywh.cpu().numpy()  # (center_x, center_y, width, height)
     track_ids = results[0].boxes.id.int().cpu().tolist()  # Tracking IDs
 
+    # Convert bounding boxes to original frame size (x1, y1, x2, y2)
+    person_bboxes_scaled = []
+    for bbox in person_bboxes:
+        center_x, center_y, width, height = bbox
+        x1 = int((center_x - width / 2))
+        y1 = int((center_y - height / 2))
+        x2 = int((center_x + width / 2))
+        y2 = int((center_y + height / 2))
+        person_bboxes_scaled.append([x1, y1, x2, y2])
+
     return {
-        "modified_frame": modified_frame,
-        "person_boxes": person_bboxes,
-        "track_ids": track_ids
+        "modified_frame": frame,
+        "person_boxes": person_bboxes_scaled,  # Scaled to match the original frame
+        "track_ids": track_ids,
     }
 
 
