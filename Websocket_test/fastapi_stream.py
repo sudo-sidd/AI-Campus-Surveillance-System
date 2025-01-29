@@ -25,6 +25,15 @@ data_manager = DataManager(
         collection_name='DatabaseDB'
     )
 
+mongo_uri=os.getenv("MONGO_URI", "mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/")
+db_name='ML_project'
+collection_name='DatabaseDB'
+
+client = MongoClient(mongo_uri)
+db = client[db_name]
+collection = db[collection_name]
+
+
 # Load camera data from data.json
 DATA_FILE_PATH = Path('/home/mithun/PROJECT/git_update/Face_rec-ID_detection/Websocket_test/Detection/data.json')
 cached_data = None
@@ -87,20 +96,6 @@ def draw_annotations(frame, person_data):
         print(f"Error in draw_annotations: {e}")
     return frame
 
-def save_person_image(frame, bbox, camera_location, track_id):
-    try:
-        x1, y1, x2, y2 = bbox
-        person_image = frame[y1:y2, x1:x2]
-        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        image_name = f"person_{camera_location}_{track_id}_{current_time}.jpg"
-        image_path = os.path.join(IMAGE_FOLDER_PATH, image_name)
-        
-        os.makedirs(IMAGE_FOLDER_PATH, exist_ok=True)
-        cv2.imwrite(image_path, person_image)
-        return "/images/" + image_name
-    except Exception as e:
-        print(f"Error saving person image: {e}")
-        return None
 
 def process_frame(camera_index, camera_ip, camera_location):
     try:
@@ -176,6 +171,7 @@ def process_frame(camera_index, camera_ip, camera_location):
 
                             people_data.append(person)
                             if id_flag == False:
+                                image_name = f"{camera_index}-{camera_location}.jpg"
                                 doc_id = ObjectId()
                                 document = {
                                     "_id": doc_id,
@@ -189,8 +185,11 @@ def process_frame(camera_index, camera_ip, camera_location):
                                     'face_box': person['face_box'],
                                     'id_card': person['id_card'],
                                     'id_box': person['id_box'],
+                                    'image_path': 'images/'+image_name
                                 }
-                                DataManager.collection.insert_one(document)
+                                collection.insert_one(document)
+                                path = os.path.join(IMAGE_FOLDER_PATH, image_name)
+                                cv2.imwrite(path, person_image)
                             if person_flag == "UNKNOWN":
                                 saved_doc = data_manager.save_data(person_image, person)
                                 print(saved_doc)

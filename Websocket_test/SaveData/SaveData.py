@@ -62,7 +62,6 @@ class DataManager:
                     'face_box': context['face_box'],
                     'id_card':context['id_card'],
                     'id_box': context['id_box'],
-
                 }
             else:
                 # Handle new face
@@ -83,8 +82,9 @@ class DataManager:
                     'face_box': context['face_box'],
                     'id_card':context['id_card'],
                     'id_box': context['id_box'],
+                    'image_path': 'images / '+image_name,
                 }
-
+                image_path =os.path.join(self.image_folder , image_name)
                 # Save image only for new faces
                 cv2.imwrite(str(image_path), image)
                 
