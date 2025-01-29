@@ -115,6 +115,7 @@ def preprocess_frame(frame):
         print(f"Preprocessing error: {e}")
         return frame
 
+
 def process_frame(camera_index, camera_ip, camera_location):
     try:
         cap = cv2.VideoCapture(camera_ip)
@@ -168,7 +169,7 @@ def process_frame(camera_index, camera_ip, camera_location):
                                 'id_flag': False,
                                 'id_card': 'none',
                                 'id_box': [0, 0, 0, 0],
-                                'camera_location':camera_location,
+                                'camera_location': camera_location,
                             }
 
                             try:
@@ -177,34 +178,61 @@ def process_frame(camera_index, camera_ip, camera_location):
                                 person['face_box'] = face_box
                             except Exception as e:
                                 print(f"Face recognition error: {e}")
-                            # ROI Filtering: Lower 50% of person crop
+
+                            # CHEST-LEVEL ID DETECTION ENHANCEMENTS
                             height, width = person_image.shape[:2]
-                            roi_y_start = int(height * 0.5)  # Lower half
-                            id_roi = person_image[roi_y_start:, :]
+
+                            # 1. Adjusted ROI for chest-level IDs (20%-60% of person height)
+                            roi_y_start = int(height * 0.20)
+                            roi_y_end = int(height * 0.60)
+                            roi_x_start = int(width * 0.25)
+                            roi_x_end = int(width * 0.75)
+                            id_roi = person_image[roi_y_start:roi_y_end, roi_x_start:roi_x_end]
+
+                            # 2. ROI Enhancement
+                            if id_roi.size > 0:
+                                # Sharpening and upscaling
+                                kernel = np.array([[0, -1, 0], [-1, 5, -1], [0, -1, 0]])
+                                sharpened = cv2.filter2D(id_roi, -1, kernel)
+                                enhanced_roi = cv2.resize(sharpened, None, fx=1.5, fy=1.5,
+                                                          interpolation=cv2.INTER_CUBIC)
+
+                                # 3. Rotation augmentation (±15 degrees)
+                                angle = np.random.uniform(-15, 15)
+                                rows, cols = enhanced_roi.shape[:2]
+                                M = cv2.getRotationMatrix2D((cols / 2, rows / 2), angle, 1)
+                                rotated_roi = cv2.warpAffine(enhanced_roi, M, (cols, rows))
+                            else:
+                                rotated_roi = id_roi
 
                             try:
-                                id_flag, id_box_roi, id_card = detect_id_card(id_roi)
+                                id_flag, id_box_roi, id_card = detect_id_card(rotated_roi)
 
+                                # Convert coordinates back to original frame
                                 if id_flag and id_box_roi:
-                                    roi_x1, roi_y1, roi_x2, roi_y2 = id_box_roi
-                                    id_box = (
-                                        roi_x1,
-                                        roi_y1 + roi_y_start,  # Adjust Y-coordinates
-                                        roi_x2,
-                                        roi_y2 + roi_y_start
-                                    )
+                                    # Adjust for ROI position and enhancement/rotation
+                                    rx1, ry1, rx2, ry2 = id_box_roi
+                                    scale_factor = 1 / 1.5  # Account for upscaling
+
+                                    # Original ROI coordinates
+                                    orig_x1 = int(rx1 * scale_factor) + roi_x_start + x1
+                                    orig_y1 = int(ry1 * scale_factor) + roi_y_start + y1
+                                    orig_x2 = int(rx2 * scale_factor) + roi_x_start + x1
+                                    orig_y2 = int(ry2 * scale_factor) + roi_y_start + y1
+
+                                    person['id_box'] = [orig_x1, orig_y1, orig_x2, orig_y2]
+                                    person['id_card'] = id_card
                                 else:
-                                    id_box = [0, 0, 0, 0]
+                                    person['id_box'] = [0, 0, 0, 0]
 
                                 person['id_flag'] = id_flag
-                                person['id_box'] = id_box
-                                person['id_card'] = id_card
                             except Exception as e:
                                 print(f"ID card detection error: {e}")
 
-
                             people_data.append(person)
-                            if person['face_flag'][0] == "UNKNOWN" or not person['id_flag']:
+
+                            # Save condition for chest-level IDs
+                            if person['face_flag'] == "UNKNOWN" or not person['id_flag']:
                                 save_doc = data_manager.save_document(
                                     person_image,
                                     {
@@ -212,7 +240,7 @@ def process_frame(camera_index, camera_ip, camera_location):
                                         'id_flag': person['id_flag'],
                                         'bbox': person['bbox'],
                                         'track_id': track_id,
-                                        'face_flag': person['face_flag'][0],
+                                        'face_flag': person['face_flag'],
                                         'face_box': person['face_box'],
                                         'id_card': person['id_card'],
                                         'id_box': person['id_box'],
@@ -224,10 +252,9 @@ def process_frame(camera_index, camera_ip, camera_location):
                             print(f"Error processing person: {e}")
                             continue
 
-                    # Draw annotations on a copy of the frame
+                    # Draw annotations with ID box
                     annotated_frame = frame.copy()
                     annotated_frame = draw_annotations(annotated_frame, people_data)
-
 
                     # Update current frame for websocket
                     _, jpeg = cv2.imencode('.jpg', annotated_frame)
@@ -242,7 +269,6 @@ def process_frame(camera_index, camera_ip, camera_location):
     finally:
         if cap is not None and cap.isOpened():
             cap.release()
-
 # Start separate threads for each camera
 for index, camera in enumerate(camera_data):
     executor.submit(process_frame, index, camera["camera_ip"],camera["camera_location"])
