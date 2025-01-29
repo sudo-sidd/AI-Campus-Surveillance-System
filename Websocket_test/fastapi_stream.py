@@ -97,6 +97,24 @@ def draw_annotations(frame, person_data):
     return frame
 
 
+def preprocess_frame(frame):
+    """Enhances contrast using CLAHE in LAB color space."""
+    try:
+        # Convert to LAB color space
+        lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+        l_channel, a_channel, b_channel = cv2.split(lab)
+
+        # Apply CLAHE to L channel
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l_clahe = clahe.apply(l_channel)
+
+        # Merge channels and convert back to BGR
+        merged_lab = cv2.merge((l_clahe, a_channel, b_channel))
+        return cv2.cvtColor(merged_lab, cv2.COLOR_LAB2BGR)
+    except Exception as e:
+        print(f"Preprocessing error: {e}")
+        return frame
+
 def process_frame(camera_index, camera_ip, camera_location):
     try:
         cap = cv2.VideoCapture(camera_ip)
@@ -115,7 +133,7 @@ def process_frame(camera_index, camera_ip, camera_location):
                     cap.release()
                     cap = cv2.VideoCapture(camera_ip)
                     continue
-
+                frame = preprocess_frame(frame)
                 frame_count += 1
 
                 if frame_count % 10 == 0:
@@ -170,29 +188,21 @@ def process_frame(camera_index, camera_ip, camera_location):
 
 
                             people_data.append(person)
-                            if id_flag == False:
-                                image_name = f"{camera_index}-{camera_location}.jpg"
-                                doc_id = ObjectId()
-                                document = {
-                                    "_id": doc_id,
-                                    "timestamp": datetime.now(),
-                                    "person_id": None,  # Link to existing person,
-                                    "camera_location": camera_location,
-                                    "id_flag": person['id_flag'],
-                                    'bbox': person['bbox'],
-                                    'track_id': person['track_id'],
-                                    'face_flag': person['face_flag'],
-                                    'face_box': person['face_box'],
-                                    'id_card': person['id_card'],
-                                    'id_box': person['id_box'],
-                                    'image_path': 'images/'+image_name
-                                }
-                                collection.insert_one(document)
-                                path = os.path.join(IMAGE_FOLDER_PATH, image_name)
-                                cv2.imwrite(path, person_image)
-                            if person_flag == "UNKNOWN":
-                                saved_doc = data_manager.save_data(person_image, person)
-                                print(saved_doc)
+                            if person['face_flag'][0] == "UNKNOWN" or not person['id_flag']:
+                                save_doc = data_manager.save_document(
+                                    person_image,
+                                    {
+                                        'camera_location': camera_location,
+                                        'id_flag': person['id_flag'],
+                                        'bbox': person['bbox'],
+                                        'track_id': track_id,
+                                        'face_flag': person['face_flag'][0],
+                                        'face_box': person['face_box'],
+                                        'id_card': person['id_card'],
+                                        'id_box': person['id_box'],
+                                    }
+                                )
+                                print(save_doc)
 
                         except Exception as e:
                             print(f"Error processing person: {e}")
