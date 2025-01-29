@@ -175,8 +175,25 @@ def process_frame(camera_index, camera_ip, camera_location):
 
 
                             people_data.append(person)
-                            if person_flag == "UNKNOWN" or id_flag == False:
+                            if id_flag == False:
+                                doc_id = ObjectId()
+                                document = {
+                                    "_id": doc_id,
+                                    "timestamp": datetime.now(),
+                                    "person_id": None,  # Link to existing person,
+                                    "camera_location": camera_location,
+                                    "id_flag": person['id_flag'],
+                                    'bbox': person['bbox'],
+                                    'track_id': person['track_id'],
+                                    'face_flag': person['face_flag'],
+                                    'face_box': person['face_box'],
+                                    'id_card': person['id_card'],
+                                    'id_box': person['id_box'],
+                                }
+                                DataManager.collection.insert_one(document)
+                            if person_flag == "UNKNOWN":
                                 saved_doc = data_manager.save_data(person_image, person)
+                                print(saved_doc)
 
                         except Exception as e:
                             print(f"Error processing person: {e}")
