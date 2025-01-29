@@ -29,7 +29,7 @@ except Exception as e:
     exit(1)
 
 # Load camera data from data.json
-DATA_FILE_PATH = Path('./Detection/data.json')
+DATA_FILE_PATH = Path('/home/mithun/PROJECT/git_update/Face_rec-ID_detection/Websocket_test/Detection/data.json')
 cached_data = None
 
 def load_data():
@@ -136,33 +136,12 @@ def process_frame(camera_index, camera_ip):
                     track_ids = person_results["track_ids"]
                     people_data = []
 
-<<<<<<< HEAD
-                    # Face recognition
-                    try:
-                        person_flag, face_boxes = process_faces(person_image)
-
-                        if face_boxes:
-                            # Adjust face box coordinates to original frame
-                            fb_x1, fb_y1, fb_x2, fb_y2 = face_boxes[0]
-                            fb_x1 += x1
-                            fb_y1 += y1
-                            fb_x2 += x1
-                            fb_y2 += y1
-                            person['face_box'] = [fb_x1, fb_y1, fb_x2, fb_y2]
-                            person['face_flag'] = person_flag
-                        else:
-                            person['face_flag'] = [("UNKNOWN", (0, 0))]
-                            person['face_box'] = [0, 0, 0, 0]
-                    except Exception as e:
-                        print(f"Error during face recognition: {e}")
-=======
                     for person_box, track_id in zip(np.array(person_boxes).tolist(), track_ids):
                         try:
                             x1, y1, x2, y2 = [int(coord) for coord in person_box]
                             frame_height, frame_width = frame.shape[:2]
                             x1, y1 = max(0, x1), max(0, y1)
                             x2, y2 = min(frame_width, x2), min(frame_height, y2)
->>>>>>> c1f20d8 (first commit)
 
                             if x2 <= x1 or y2 <= y1:
                                 continue
