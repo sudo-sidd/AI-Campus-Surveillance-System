@@ -26,7 +26,7 @@ recognizer = iresnet_inference(
 )
 
 # Load pre-saved face features
-feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
+feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "feature")
 images_name_path = os.path.join(feature_path, "images_name.npy")
 images_emb_path = os.path.join(feature_path, "images_emb.npy")
 images_names = np.load(images_name_path)
@@ -59,8 +59,9 @@ def recognize_face(face_image):
 
 def process_faces(frame):
     face_results = yolo_model.predict(frame, conf=0.7)
-    labels = []  # To store labels
-    bboxes = []  # To store bounding boxes
+    best_label = None  # Store the best match
+    best_bbox = None
+    best_score = 0.0
 
     for result in face_results:
         for bbox in result.boxes.xyxy:
@@ -70,52 +71,18 @@ def process_faces(frame):
             try:
                 score, name = recognize_face(cropped_face)
 
-                if score >= 0.5:
-                    label = f"{name} ({score:.2f})"
-                    color = (255, 0, 255)  # Magenta for recognized
-                else:
-                    label = "UNKNOWN"
-                    color = (0, 165, 255)  # Orange for unknown
-
-                # Add label and bbox to the lists
-                labels.append((label, (x1, y1)))
-                bboxes.append((x1, y1, x2, y2))
+                if score >= 0.5 and score > best_score:
+                    best_label = (f"{name} ({score:.2f})", (x1, y1))
+                    best_bbox = (x1, y1, x2, y2)
+                    best_score = score
 
             except Exception as e:
                 print(f"Error recognizing face: {e}")
                 continue
 
-    return labels, bboxes
-#
-#
-# cap = cv2.VideoCapture(0)
-#
-# if not cap.isOpened():
-#     print("Error: Could not open camera.")
-#     exit()
-#
-# while True:
-#     ret, frame = cap.read()
-#     if not ret:
-#         print("Error: Could not read frame.")
-#         break
-#
-#     labels, bboxes = process_faces(frame)
-#
-#     # Draw bounding boxes and labels
-#     for (label, (x1, y1)), (x1, y1, x2, y2) in zip(labels, bboxes):
-#         # Draw bounding box
-#         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-#
-#         # Draw label
-#         cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
-#
-#     # Display the frame
-#     cv2.imshow("Face Recognition", frame)
-#
-#     # Exit if 'q' is pressed
-#     if cv2.waitKey(1) & 0xFF == ord('q'):
-#         break
-#
-# cap.release()
-# cv2.destroyAllWindows()
+    # Return the best match or "UNKNOWN" if no face was detected confidently
+    if best_label:
+        return [best_label], [best_bbox]
+    else:
+        return [("UNKNOWN", (0, 0))], []
+

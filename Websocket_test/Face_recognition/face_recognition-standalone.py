@@ -26,7 +26,7 @@ recognizer = iresnet_inference(
 )
 
 # Load pre-saved face features
-feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
+feature_path = os.path.join(BASE_DIR, "datasets", "face_features","feature")
 images_name_path = os.path.join(feature_path, "images_name.npy")
 images_emb_path = os.path.join(feature_path, "images_emb.npy")
 images_names = np.load(images_name_path)

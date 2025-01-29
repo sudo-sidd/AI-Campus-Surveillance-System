@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from PIL import Image
 from torchvision import transforms
-from face_detection.scrfd.detector import SCRFD
+from ultralytics import YOLO
 from face_recognition.arcface.model import iresnet_inference
 from face_recognition.arcface.utils import read_features
 from torchvision.transforms import RandomHorizontalFlip, RandomRotation, ColorJitter
@@ -14,12 +14,13 @@ from torchvision.transforms import RandomHorizontalFlip, RandomRotation, ColorJi
 # Check if CUDA is available and set the device accordingly
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Initialize the face detector
-detector = SCRFD(model_file="face_detection/scrfd/weights/scrfd_2.5g_bnkps.onnx")
+# Initialize the YOLO face detector
+BASE_DIR = "your_project_directory_here"
+yolo_model = YOLO(os.path.join(BASE_DIR, "face_detection", "yolo", "weights", "yolo11n-face.pt"))
 
 # Initialize the face recognizer
 recognizer = iresnet_inference(
-    model_name="r100", path="face_recognition/arcface/weights/arcface_r100.pth", device=device
+    model_name="r100", path="face_recognition/arcface/weights/glink360k_cosface_r100_fp16_0.1.pth", device=device
 )
 
 # Define augmentation transformations
@@ -28,6 +29,7 @@ data_augmentation = transforms.Compose([
     RandomRotation(degrees=15),
     ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1)
 ])
+
 
 @torch.no_grad()
 def get_feature(face_image):
@@ -47,6 +49,7 @@ def get_feature(face_image):
     images_emb = emb_img_face / np.linalg.norm(emb_img_face)  # Normalize
     return images_emb
 
+
 def process_person_images(person_image_path, name_person, faces_save_dir, images_name, images_emb):
     person_face_path = os.path.join(faces_save_dir, name_person)
     os.makedirs(person_face_path, exist_ok=True)
@@ -59,8 +62,14 @@ def process_person_images(person_image_path, name_person, faces_save_dir, images
                 continue
 
             try:
-                # Detect faces and landmarks
-                bboxes, landmarks = detector.detect(image=input_image)
+                # Detect faces using YOLO
+                face_results = yolo_model.predict(input_image, conf=0.7)
+
+                # Extract bounding boxes
+                bboxes = []
+                for result in face_results:
+                    for box in result.boxes.xyxy:  # x1, y1, x2, y2
+                        bboxes.append(box.cpu().numpy())
 
                 # Ensure at least one face is detected
                 if len(bboxes) == 0:
@@ -68,9 +77,9 @@ def process_person_images(person_image_path, name_person, faces_save_dir, images
                     continue
 
                 # Process each detected face
-                for i in range(len(bboxes)):
-                    x1, y1, x2, y2, score = bboxes[i]
-                    face_image = input_image[int(y1):int(y2), int(x1):int(x2)]
+                for bbox in bboxes:
+                    x1, y1, x2, y2 = map(int, bbox[:4])  # Extract coordinates
+                    face_image = input_image[y1:y2, x1:x2]
 
                     # Skip empty or invalid face images
                     if face_image.size == 0 or face_image.shape[0] < 100 or face_image.shape[1] < 100:
@@ -84,7 +93,7 @@ def process_person_images(person_image_path, name_person, faces_save_dir, images
                     augmented_face_image = data_augmentation(face_image_pil)
 
                     # Save the original and augmented images
-                    for img in [face_image, np.array(augmented_face_image)]:  # Convert augmented image back to NumPy array for saving
+                    for img in [face_image, np.array(augmented_face_image)]:
                         path_save_face = os.path.join(person_face_path, f"{len(os.listdir(person_face_path))}.jpg")
                         cv2.imwrite(path_save_face, img)
                         images_emb.append(get_feature(face_image=img))
@@ -93,6 +102,7 @@ def process_person_images(person_image_path, name_person, faces_save_dir, images
             except Exception as e:
                 print(f"Error processing image {image_name}: {e}")
                 continue
+
 
 def add_persons(backup_dir, add_persons_dir, faces_save_dir, features_path):
     images_name = []
@@ -141,12 +151,15 @@ def add_persons(backup_dir, add_persons_dir, faces_save_dir, features_path):
 
     print("Successfully added new model!")
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Add new persons to the face recognition database.")
     parser.add_argument("--backup-dir", type=str, default="./datasets/backup", help="Directory to save model data.")
-    parser.add_argument("--add-persons-dir", type=str, default="./datasets/new_persons", help="Directory to add new persons.")
+    parser.add_argument("--add-persons-dir", type=str, default="./datasets/new_persons",
+                        help="Directory to add new persons.")
     parser.add_argument("--faces-save-dir", type=str, default="./datasets/data/", help="Directory to save faces.")
-    parser.add_argument("--features-path", type=str, default="./datasets/face_features/feature", help="Path to save face features.")
+    parser.add_argument("--features-path", type=str, default="./datasets/face_features/feature",
+                        help="Path to save face features.")
     opt = parser.parse_args()
 
     for dir_path in [opt.backup_dir, opt.add_persons_dir, opt.faces_save_dir, os.path.dirname(opt.features_path)]:
@@ -157,4 +170,5 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"An error occurred: {str(e)}")
         import traceback
+
         traceback.print_exc()

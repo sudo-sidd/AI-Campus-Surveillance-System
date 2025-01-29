@@ -2,14 +2,14 @@ import cv2
 import numpy as np
 from Person_detection.Person_detection import track_persons
 from Face_recognition.face_recognize_yolo import process_faces
-from ID_detection.yolov11.ID_Detection_test import detect_id_card
+from ID_detection.yolov11.ID_Detection import detect_id_card
 
 def draw_annotations(frame, person_data):
     """Draw bounding boxes and annotations on the frame."""
     for person in person_data:
         x1, y1, x2, y2 = person['bbox']
         track_id = person['track_id']
-        face_flag = person['face_flag']
+        face_flag = person['face_flag'][0][0]
         id_card = person['id_card']
 
         # Draw the person's bounding box
@@ -74,8 +74,8 @@ while True:
 
                     # Crop the person image
                     person_image = frame[y1:y2, x1:x2]
-                    if frame is None or person_image is None:
-                        print(f"Empty or invalid image for track_id: {track_id}")
+                    if person_image.size == 0:
+                        print(f"Empty image for track_id: {track_id}")
                         continue
 
                     # Initialize person data
@@ -85,30 +85,35 @@ while True:
                         'face_flag': "UNKNOWN",
                         'face_box': [0, 0, 0, 0],
                         'id_flag': False,
-                        'id_card':'none',
+                        'id_card': 'none',
                         'id_box': [0, 0, 0, 0]
                     }
 
                     # Face recognition
                     try:
-                        person_flag, face_box = process_faces(frame)
-                        person['face_flag'] = person_flag
-                        person['face_box'] = face_box
-                        print(f"Face recognition successful for track_id {track_id}")
+                        person_flag, face_boxes = process_faces(person_image)
+                        if face_boxes:
+                            fb_x1, fb_y1, fb_x2, fb_y2 = face_boxes[0]
+                            fb_x1 += x1
+                            fb_y1 += y1
+                            fb_x2 += x1
+                            fb_y2 += y1
+                            person['face_flag'] = person_flag
+                            person['face_box'] = [fb_x1, fb_y1, fb_x2, fb_y2]
+                        else:
+                            person['face_flag'] = [("UNKNOWN", (0, 0))]
                     except Exception as e:
-                        print(f"Error during face recognition for track_id {track_id}: {e}")
+                        print(f"Face recognition error: {e}")
 
-                    # ID card detection (uncomment if you want to enable this)
+                    # ID card detection
                     try:
-                        id_flag , id_box , id_card = detect_id_card(person_image)
+                        id_flag, id_box, id_card = detect_id_card(person_image)
                         person['id_flag'] = id_flag
                         person['id_box'] = id_box
                         person['id_card'] = id_card
-                        print(f"ID card detection successful for track_id {track_id}")
                     except Exception as e:
-                        print(f"Error during ID card detection for track_id {track_id}: {e}")
+                        print(f"ID detection error: {e}")
 
-                    # Append person data
                     people_data.append(person)
 
                 # Draw bounding boxes and annotations

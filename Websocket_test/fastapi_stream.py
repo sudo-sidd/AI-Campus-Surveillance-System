@@ -143,12 +143,22 @@ def process_frame(camera_index, camera_ip):
 
                     # Face recognition
                     try:
-                        person_flag, face_box = process_faces(frame)
-                        person['face_flag'] = person_flag
-                        person['face_box'] = face_box
-                        print(f"Face recognition successful for track_id {track_id}")
+                        person_flag, face_boxes = process_faces(person_image)
+
+                        if face_boxes:
+                            # Adjust face box coordinates to original frame
+                            fb_x1, fb_y1, fb_x2, fb_y2 = face_boxes[0]
+                            fb_x1 += x1
+                            fb_y1 += y1
+                            fb_x2 += x1
+                            fb_y2 += y1
+                            person['face_box'] = [fb_x1, fb_y1, fb_x2, fb_y2]
+                            person['face_flag'] = person_flag
+                        else:
+                            person['face_flag'] = [("UNKNOWN", (0, 0))]
+                            person['face_box'] = [0, 0, 0, 0]
                     except Exception as e:
-                        print(f"Error during face recognition for track_id {track_id}: {e}")
+                        print(f"Error during face recognition: {e}")
 
                     # ID card detection (uncomment if you want to enable this)
                     try:

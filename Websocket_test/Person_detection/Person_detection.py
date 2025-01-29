@@ -38,16 +38,3 @@ def track_persons(frame):
     }
 
 
-#
-# frame = cv2.imread('ppl1.jpg')
-#
-# results = track_persons(frame)
-#
-# annotated_frame = results["modified_frame"]
-# bounding_boxes = results["person_boxes"]
-# track_ids = results["track_ids"]
-#
-# cv2.imwrite('op_frame.png', annotated_frame)
-# print(bounding_boxes,'\n')
-# print(track_ids)
-# cv2.waitKey(0)
