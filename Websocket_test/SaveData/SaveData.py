@@ -16,109 +16,68 @@ logger = logging.getLogger(__name__)
 
 #  SaveData.py
 class DataManager:
-    def __init__(self, mongo_uri, db_name, collection_name, image_folder=IMAGE_PATH):
-        self.image_folder = Path(image_folder)
-        self.image_folder.mkdir(parents=True, exist_ok=True)
-        
-        try:
-            self.client = MongoClient(mongo_uri)
-            self.db = self.client[db_name]
-            self.collection = self.db[collection_name]
-            self.face_system = FaceEmbeddingSystem()
-            logger.info('Database connected successfully')
-        except Exception as e:
-            logger.error(f"MongoDB connection error: {e}")
-            raise
-
     def save_data(self, image, context):
         try:
-            # Get face embeddings first
+            # Extract face embeddings
             face_embeddings = self.face_system.get_face_embedding(image)
-            if face_embeddings is None:
-                logger.warning("No face detected in the image")
+            if not face_embeddings:
+                logger.warning("No face detected")
                 return None
 
-            # Check if face already exists
-            existing_face = self.face_system.find_matching_person(face_embeddings)
-            if existing_face:
-                logger.info(f"Face matches existing person ID: {existing_face}")
-                # Update embeddings for existing person
-                doc_id = ObjectId()
-                self.face_system._save_embeddings({
-                    'doc_id': doc_id,
-                    'embedding': face_embeddings
-                })
-                
-                # Save only the new document reference
-                document = {
-                    "_id": doc_id,
+            # Check for existing person
+            existing_person_id = self.face_system.find_matching_person(face_embeddings)
+
+            if existing_person_id:
+                # Update existing person's record
+                logger.info(f"Updating existing person: {existing_person_id}")
+
+                update_data = {
                     "timestamp": datetime.now(),
-                    "person_id": existing_face,  # Link to existing person,
                     "camera_location": context['camera_location'],
                     "id_flag": context['id_flag'],
-                    'bbox': context['bbox'],
-                    'track_id': context['track_id'],
-                    'face_flag': context['face_flag'],
-                    'face_box': context['face_box'],
-                    'id_card':context['id_card'],
-                    'id_box': context['id_box'],
+                    "bbox": context['bbox'],
+                    "track_id": context['track_id'],
+                    "face_flag": context['face_flag'],
+                    "face_box": context['face_box'],
+                    "id_card": context['id_card'],
+                    "id_box": context['id_box'],
                 }
+
+                # Update the most recent entry for this person
+                self.collection.update_one(
+                    {"person_id": existing_person_id},
+                    {"$set": update_data},
+                    upsert=False  # Don't create new doc if missing
+                )
+                return existing_person_id
+
             else:
-                # Handle new face
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                image_name = f"person_{context['camera_location']}_{timestamp}.jpg"
-                image_path = self.image_folder / image_name
+                # Save new person with embeddings
+                logger.info("Saving new person")
+                image_name = f"person_{context['camera_location']}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+                image_path = os.path.join(self.image_folder, image_name)
 
-                doc_id = ObjectId()
+                # Save image
+                cv2.imwrite(image_path, image)
+
+                # Create new document
+                new_person_id = ObjectId()
                 document = {
-                    "_id": doc_id,
+                    "_id": new_person_id,
+                    "person_id": new_person_id,  # Link to self
+                    "image_path": f"images/{image_name}",
                     "timestamp": datetime.now(),
-                    "person_id": existing_face,  # Link to existing person,
-                    "camera_location": context['camera_location'],
-                    "id_flag": context['id_flag'],
-                    'bbox': context['bbox'],
-                    'track_id': context['track_id'],
-                    'face_flag': "UNKNOWN",
-                    'face_box': context['face_box'],
-                    'id_card':context['id_card'],
-                    'id_box': context['id_box'],
-                    'image_path': 'static/images / '+image_name,
+                    **context  # Include all context fields
                 }
-                image_path =os.path.join(self.image_folder , image_name)
-                # Save image only for new faces
-                cv2.imwrite(str(image_path), image)
-                
-                # Save embeddings for new person
-                self.face_system._save_embeddings({
-                    'doc_id': doc_id,
-                    'embedding': face_embeddings
-                })
 
-            # Save document to MongoDB
-            self.collection.insert_one(document)
-            logger.info(f"Document saved with ID: {document['_id']}")
-            return document['_id']
+                # Insert into DB and save embeddings
+                self.collection.insert_one(document)
+                self.face_system._save_embeddings({
+                    "doc_id": new_person_id,
+                    "embedding": face_embeddings
+                })
+                return new_person_id
 
         except Exception as e:
-            logger.error(f"Error saving data: {e}")
+            logger.error(f"Error in save_data: {e}")
             return None
-
-    def check_data(self, image, context):
-        """Check if person exists and update embeddings"""
-        try:
-            result = self.face_system.identify_person(image)
-            
-            if result and result['matched']:
-                # Only update embedding data, don't save new image
-                self.face_system._save_embeddings(context)
-                logger.info(f"Updated embeddings for existing person: {result['person_id']}")
-                return result['person_id']
-            else:
-                # Save new person data
-                self.face_system._save_embeddings(context)
-                logger.info("Saved embeddings for new person")
-                return None
-                
-        except Exception as e:
-            logger.error(f"Error checking data: {e}")
-            raise
