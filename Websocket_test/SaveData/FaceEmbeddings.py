@@ -45,7 +45,7 @@ class FaceEmbeddingSystem:
                     logger.info(f"Updating embeddings for existing person ID: {match_id}")
                     self.embeddings_data[match_id]['embeddings'].append(context["embedding"])
                     self.embeddings_data[match_id]['last_updated'] = datetime.now().isoformat()
-                    self.embeddings_data[match_id]['doc_ids'].append(str(context["doc_id"]))
+                    self.embeddings_data[match_id]['doc_id'] = (str(context["doc_id"]))
                 else:
                     # Create new person entry
                     person_id = str(len(self.embeddings_data) + 1)
@@ -61,7 +61,7 @@ class FaceEmbeddingSystem:
             for person_id, person_data in self.embeddings_data.items():
                 save_data[person_id] = {
                     'person_id': person_data['person_id'],
-                    'doc_ids': person_data['doc_id'],
+                    'doc_id': person_data['doc_id'],
                     'embeddings': [emb.tolist() for emb in person_data['embeddings']],
                     'last_updated': person_data['last_updated'],
                 }
