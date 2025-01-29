@@ -103,10 +103,10 @@ window.onload = function () {
     const cameraGrid = document.getElementById('cameraGrid');
     let cameras = [];
 
-    const  IP = '192.168.28.34';
+    const  IP = '192.168.45.14';
     // fetch('api/env/')
     //     .then(response => response.json())
-    //     .then(env => {
+    //     .then(env => {f
     //         console.log(response.json);
     //         IP = env.IP;
     //         console.log(IP);
