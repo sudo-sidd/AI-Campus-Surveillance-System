@@ -177,9 +177,25 @@ def process_frame(camera_index, camera_ip, camera_location):
                                 person['face_box'] = face_box
                             except Exception as e:
                                 print(f"Face recognition error: {e}")
+                            # ROI Filtering: Lower 50% of person crop
+                            height, width = person_image.shape[:2]
+                            roi_y_start = int(height * 0.5)  # Lower half
+                            id_roi = person_image[roi_y_start:, :]
 
                             try:
-                                id_flag, id_box, id_card = detect_id_card(person_image)
+                                id_flag, id_box_roi, id_card = detect_id_card(id_roi)
+
+                                if id_flag and id_box_roi:
+                                    roi_x1, roi_y1, roi_x2, roi_y2 = id_box_roi
+                                    id_box = (
+                                        roi_x1,
+                                        roi_y1 + roi_y_start,  # Adjust Y-coordinates
+                                        roi_x2,
+                                        roi_y2 + roi_y_start
+                                    )
+                                else:
+                                    id_box = [0, 0, 0, 0]
+
                                 person['id_flag'] = id_flag
                                 person['id_box'] = id_box
                                 person['id_card'] = id_card
