@@ -14,19 +14,16 @@ from Detection.Detection.settings import STATIC_ROOT
 from Person_detection.Person_detection import track_persons
 from Face_recognition.face_recognize_yolo import process_faces
 from ID_detection.yolov11.ID_Detection_test import detect_id_card
+from SaveData.SaveData import DataManager
 
 IMAGE_FOLDER_PATH = os.path.join(STATIC_ROOT, 'images')
 app = FastAPI()
 
-# MongoDB connection setup
-try:
-    client = MongoClient(
-        os.getenv("MONGO_URI", 'mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/'))
-    db = client['ML_project']
-    collection = db['DatabaseDB']
-except Exception as e:
-    print(f"Error connecting to MongoDB: {e}")
-    exit(1)
+data_manager = DataManager(
+        mongo_uri=os.getenv("MONGO_URI", "mongodb+srv://ml_dept_project:ml_dept_project@ml-project.gkigx.mongodb.net/"),
+        db_name='ML_project',
+        collection_name='DatabaseDB'
+    )
 
 # Load camera data from data.json
 DATA_FILE_PATH = Path('/home/mithun/PROJECT/git_update/Face_rec-ID_detection/Websocket_test/Detection/data.json')
@@ -176,7 +173,11 @@ def process_frame(camera_index, camera_ip, camera_location):
                             except Exception as e:
                                 print(f"ID card detection error: {e}")
 
+
                             people_data.append(person)
+                            if person_flag == "UNKNOWN" or id_flag == False:
+                                saved_doc = data_manager.save_data(person_image, person)
+
                         except Exception as e:
                             print(f"Error processing person: {e}")
                             continue
@@ -184,6 +185,7 @@ def process_frame(camera_index, camera_ip, camera_location):
                     # Draw annotations on a copy of the frame
                     annotated_frame = frame.copy()
                     annotated_frame = draw_annotations(annotated_frame, people_data)
+
 
                     # Update current frame for websocket
                     _, jpeg = cv2.imencode('.jpg', annotated_frame)

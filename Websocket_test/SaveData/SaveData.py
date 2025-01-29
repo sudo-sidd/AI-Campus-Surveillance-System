@@ -6,7 +6,8 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import logging
 from .FaceEmbeddings import FaceEmbeddingSystem
-from Detection.Detection.settings import STATIC_ROOT
+from ..Detection.Detection.settings import STATIC_ROOT
+
 
 IMAGE_PATH = os.path.join(STATIC_ROOT, 'images')
 
