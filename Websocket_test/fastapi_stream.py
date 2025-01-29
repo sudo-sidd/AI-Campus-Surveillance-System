@@ -105,7 +105,7 @@ def save_person_image(frame, bbox, camera_location, track_id):
         print(f"Error saving person image: {e}")
         return None
 
-def process_frame(camera_index, camera_ip):
+def process_frame(camera_index, camera_ip, camera_location):
     try:
         cap = cv2.VideoCapture(camera_ip)
 
@@ -157,7 +157,8 @@ def process_frame(camera_index, camera_ip):
                                 'face_box': [0, 0, 0, 0],
                                 'id_flag': False,
                                 'id_card': 'none',
-                                'id_box': [0, 0, 0, 0]
+                                'id_box': [0, 0, 0, 0],
+                                'camera_location':camera_location,
                             }
 
                             try:
@@ -184,32 +185,6 @@ def process_frame(camera_index, camera_ip):
                     annotated_frame = frame.copy()
                     annotated_frame = draw_annotations(annotated_frame, people_data)
 
-                    # Save detections
-                    for person in people_data:
-                        try:
-                            image_path = save_person_image(frame, person['bbox'], 
-                                                         camera_data[camera_index]['camera_location'], 
-                                                         person['track_id'])
-                            
-                            if image_path:
-                                existing_document = collection.find_one({"track_id": person['track_id']})
-                                if existing_document:
-                                    collection.delete_one({"_id": existing_document["_id"]})
-
-                                document = {
-                                    "_id": ObjectId(),
-                                    "location": camera_data[camera_index]['camera_location'],
-                                    "time": datetime.now().strftime("%D %I:%M %p"),
-                                    "Role": "Unidentified" if person['face_flag'] == "UNKNOWN" else "SIETIAN",
-                                    "Wearing_id_card": person['id_card'],
-                                    "image": image_path,
-                                    "track_id": person['track_id']
-                                }
-                                collection.insert_one(document)
-                        except Exception as e:
-                            print(f"Error saving detection: {e}")
-                            continue
-
                     # Update current frame for websocket
                     _, jpeg = cv2.imencode('.jpg', annotated_frame)
                     current_frames[camera_index] = base64.b64encode(jpeg.tobytes()).decode('utf-8')
@@ -226,7 +201,7 @@ def process_frame(camera_index, camera_ip):
 
 # Start separate threads for each camera
 for index, camera in enumerate(camera_data):
-    executor.submit(process_frame, index, camera["camera_ip"])
+    executor.submit(process_frame, index, camera["camera_ip"],camera["camera_location"])
 
 @app.websocket("/ws/video/{camera_id}/")
 async def video_feed(websocket: WebSocket, camera_id: int):
