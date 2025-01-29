@@ -76,7 +76,7 @@ def draw_annotations(frame, person_data):
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
             # Prepare the text message
-            text = f"ID: {track_id} | Face: {face_flag} | IDCard: {id_card}"
+            text = f"ID: {track_id} | Face: {face_flag[0]} | IDCard: {id_card}"
             (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
 
             # Add a white background for better text visibility
@@ -118,7 +118,7 @@ def process_frame(camera_index, camera_ip, camera_location):
 
                 frame_count += 1
 
-                if frame_count % 3 == 0:
+                if frame_count % 10 == 0:
                     person_results = track_persons(frame)
 
                     if not person_results or "person_boxes" not in person_results or "track_ids" not in person_results:
@@ -155,7 +155,7 @@ def process_frame(camera_index, camera_ip, camera_location):
 
                             try:
                                 person_flag, face_box = process_faces(person_image)
-                                person['face_flag'] = person_flag
+                                person['face_flag'] = person_flag[0]
                                 person['face_box'] = face_box
                             except Exception as e:
                                 print(f"Face recognition error: {e}")

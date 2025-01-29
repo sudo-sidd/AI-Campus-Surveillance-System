@@ -13,7 +13,7 @@ class FaceEmbeddingSystem:
     def __init__(self, json_path='face_embeddings.json'):
         self.json_path = Path(json_path)
         self.embeddings_data = self._load_embeddings()
-        self.similarity_threshold = 0.6
+        self.similarity_threshold = 0.2
         
         if not self.json_path.exists():
             self._save_embeddings()

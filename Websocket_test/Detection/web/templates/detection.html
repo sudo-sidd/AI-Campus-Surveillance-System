@@ -61,15 +61,15 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>
-                            {% if outsider.image %}
-                                <img src="{% static outsider.image %}" alt="Outsider Image" style="width: 100px;" class="clickable-image" onclick="openModal('{% static outsider.image %}')">
+                            {% if outsider.image_path %}
+                                <img src="{% static outsider.image_path %}" alt="Outsider Image" style="width: 100px;" class="clickable-image" onclick="openModal('{% static outsider.image %}')">
                             {% else %}
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 100px;">
                             {% endif %}
                         </td>
-                        <td>{{ outsider.Wearing_id_card }}</td>
-                        <td>{{ outsider.time}}</td>
-                        <td>{{ outsider.location }}</td>
+                        <td>{{ outsider.id_flag }}</td>
+                        <td>{{ outsider.timestamp}}</td>
+                        <td>{{ outsider.camera_location }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -94,16 +94,16 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>
-                            {% if non_id_holder.image %}
-                                <img src="{% static non_id_holder.image %}" alt="Non-ID Holder Image" style="width: 100px;" class="clickable-image">
+                            {% if non_id_holder.image_path %}
+                                <img src="{% static non_id_holder.image_path %}" alt="Non-ID Holder Image" style="width: 100px;" class="clickable-image">
                             {% else %}
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 100px;">
                             {% endif %}
                         </td>
-                        <td>{{ non_id_holder.Wearing_id_card }}</td>
-                        <td>{{ non_id_holder.time }}</td>
-                        <td>{{ non_id_holder.Role }}</td>
-                        <td>{{ non_id_holder.location }}</td>
+                        <td>{{ non_id_holder.id_flag }}</td>
+                        <td>{{ non_id_holder.timestamp }}</td>
+                        <td>{{ non_id_holder.face_flag }}</td>
+                        <td>{{ non_id_holder.camera_location }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>

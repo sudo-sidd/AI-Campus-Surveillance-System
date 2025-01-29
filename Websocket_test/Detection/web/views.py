@@ -81,14 +81,15 @@ def detection_view(request):
             # role = document.get('role', '').lower()  # Ensure role field is processed in lowercase
 
             # Categorize by role and ID card status
-            if document['Role'] == 'Unidentified':
+            if document['face_flag'][0] == 'UNKNOWN':
                 outsiders.append(document)
-            if (document["Wearing_id_card"] == 'false' or document['Wearing_id_card'] == 'False' or document['Wearing_id_card'] == False) and document['Role']!='Unidentified':  # Check ID card status
+            if (document["id_flag"] == False):  # Check ID card status
                 non_id_holders.append(document)
 
         # Debugging (Optional)
-        # print(f"Outsiders: {outsiders}\n")
-        # print(f"Non-ID Holders: {non_id_holders}\n")
+        print(data)
+        print(f"Outsiders: {outsiders}\n")
+        print(f"Non-ID Holders: {non_id_holders}\n")
         
     except Exception as e:
         # Handle any database-related errors gracefully
