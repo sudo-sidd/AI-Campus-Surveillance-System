@@ -6,13 +6,16 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import logging
 from .FaceEmbeddings import FaceEmbeddingSystem
+from Detection.Detection.settings import STATIC_ROOT
+
+IMAGE_PATH = os.path.join(STATIC_ROOT, 'images')
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 #  SaveData.py
 class DataManager:
-    def __init__(self, mongo_uri, db_name, collection_name, image_folder='./images/'):
+    def __init__(self, mongo_uri, db_name, collection_name, image_folder=IMAGE_PATH):
         self.image_folder = Path(image_folder)
         self.image_folder.mkdir(parents=True, exist_ok=True)
         
@@ -48,11 +51,17 @@ class DataManager:
                 # Save only the new document reference
                 document = {
                     "_id": doc_id,
-                    "location": context['camera_location'],
                     "timestamp": datetime.now(),
-                    "person_status": "known",  # Update status since we found a match
-                    "id_card_status": context['id_card_status'],
-                    "person_id": existing_face  # Link to existing person
+                    "person_id": existing_face,  # Link to existing person,
+                    "camera_location": context['camera_location'],
+                    "id_flag": context['id_flag'],
+                    'bbox': context['bbox'],
+                    'track_id': context['track_id'],
+                    'face_flag': context['face_flag'],
+                    'face_box': context['face_box'],
+                    'id_card':context['id_card'],
+                    'id_box': context['id_box'],
+
                 }
             else:
                 # Handle new face
@@ -63,11 +72,16 @@ class DataManager:
                 doc_id = ObjectId()
                 document = {
                     "_id": doc_id,
-                    "location": context['camera_location'],
                     "timestamp": datetime.now(),
-                    "person_status": context['person_status'],
-                    "id_card_status": context['id_card_status'],
-                    "image_path": str(image_path)
+                    "person_id": existing_face,  # Link to existing person,
+                    "camera_location": context['camera_location'],
+                    "id_flag": context['id_flag'],
+                    'bbox': context['bbox'],
+                    'track_id': context['track_id'],
+                    'face_flag': "UNKNOWN",
+                    'face_box': context['face_box'],
+                    'id_card':context['id_card'],
+                    'id_box': context['id_box'],
                 }
 
                 # Save image only for new faces
