@@ -15,9 +15,7 @@ from Person_detection.Person_detection import track_persons
 from Face_recognition.face_recognize_yolo import process_faces
 from ID_detection.yolov11.ID_Detection_test import detect_id_card
 
-
 IMAGE_FOLDER_PATH = os.path.join(STATIC_ROOT, 'images')
-
 app = FastAPI()
 
 # MongoDB connection setup
@@ -34,7 +32,6 @@ except Exception as e:
 DATA_FILE_PATH = Path('./Detection/data.json')
 cached_data = None
 
-
 def load_data():
     global cached_data
     if cached_data is None:
@@ -50,7 +47,6 @@ def load_data():
             cached_data = []
     return cached_data
 
-
 # Load camera data
 camera_data = load_data()
 print(camera_data)
@@ -60,87 +56,87 @@ current_frames = {}
 
 # ThreadPoolExecutor to handle concurrent frame processing
 executor = ThreadPoolExecutor(max_workers=4)
+
 def draw_annotations(frame, person_data):
     """Draw bounding boxes and annotations on the frame."""
-    for person in person_data:
-        x1, y1, x2, y2 = person['bbox']
-        track_id = person['track_id']
-        face_flag = person['face_flag']
-        id_card = person['id_card']
+    try:
+        for person in person_data:
+            x1, y1, x2, y2 = person['bbox']
+            track_id = person['track_id']
+            face_flag = person['face_flag']
+            id_card = person['id_card']
 
-        # Draw the person's bounding box
-        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            # Draw the person's bounding box
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-        # Prepare the text message
-        text = f"ID: {track_id} | Face: {face_flag} | IDCard: {id_card}"
-        (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+            # Prepare the text message
+            text = f"ID: {track_id} | Face: {face_flag} | IDCard: {id_card}"
+            (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
 
-        # Add a white background for better text visibility
-        cv2.rectangle(frame, (x1, y1 - 20), (x1 + text_width, y1), (255, 255, 255), -1)
+            # Add a white background for better text visibility
+            cv2.rectangle(frame, (x1, y1 - 20), (x1 + text_width, y1), (255, 255, 255), -1)
 
-        # Write the text above the bounding box
-        cv2.putText(
-            frame,
-            text,
-            (x1, y1 - 5),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.5,
-            (0, 0, 0),
-            1
-        )
+            # Write the text above the bounding box
+            cv2.putText(
+                frame,
+                text,
+                (x1, y1 - 5),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.5,
+                (0, 0, 0),
+                1
+            )
+    except Exception as e:
+        print(f"Error in draw_annotations: {e}")
+    return frame
 
+def save_person_image(frame, bbox, camera_location, track_id):
+    try:
+        x1, y1, x2, y2 = bbox
+        person_image = frame[y1:y2, x1:x2]
+        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+        image_name = f"person_{camera_location}_{track_id}_{current_time}.jpg"
+        image_path = os.path.join(IMAGE_FOLDER_PATH, image_name)
+        
+        os.makedirs(IMAGE_FOLDER_PATH, exist_ok=True)
+        cv2.imwrite(image_path, person_image)
+        return "/images/" + image_name
+    except Exception as e:
+        print(f"Error saving person image: {e}")
+        return None
 
-# Process a single frame (for each camera stream)
 def process_frame(camera_index, camera_ip):
-    cap = cv2.VideoCapture(camera_ip)  # RTSP stream URL
+    try:
+        cap = cv2.VideoCapture(camera_ip)
 
-    if not cap.isOpened():
-        print(f"Failed to open camera {camera_index} at {camera_ip}")
-        return
+        if not cap.isOpened():
+            print(f"Failed to open camera {camera_index} at {camera_ip}")
+            return
 
-    frame_count = 0
+        frame_count = 0
 
-    while True:
-        ret, frame = cap.read()
-        if ret:
-            frame_count += 1
-
-            if frame_count % 3 == 0:
-                person_results = track_persons(frame)
-
-                # Check if person_results contains valid data
-                if not person_results or "modified_frame" not in person_results or "person_boxes" not in person_results:
-                    print("Invalid person results")
+        while True:
+            try:
+                ret, frame = cap.read()
+                if not ret:
+                    print(f"Error capturing frame from camera {camera_index}")
+                    cap.release()
+                    cap = cv2.VideoCapture(camera_ip)
                     continue
 
-                # frame = person_results["modified_frame"]
-                person_boxes = person_results["person_boxes"]
-                track_ids = person_results["track_ids"]
-                people_data = []
-                for person_box, track_id in zip(np.array(person_boxes).tolist(), track_ids):
-                    x1, y1, x2, y2 = [int(coord) for coord in person_box]
+                frame_count += 1
 
-                    # Validate and clip bounding boxes
-                    frame_height, frame_width, _ = frame.shape
-                    x1, y1, x2, y2 = max(0, x1), max(0, y1), min(frame_width, x2), min(frame_height, y2)
+                if frame_count % 3 == 0:
+                    person_results = track_persons(frame)
 
-                    # Crop the person image
-                    person_image = frame[y1:y2, x1:x2]
-                    if frame is None or person_image is None:
-                        print(f"Empty or invalid image for track_id: {track_id}")
+                    if not person_results or "person_boxes" not in person_results or "track_ids" not in person_results:
                         continue
 
-                    # Initialize person data
-                    person = {
-                        'bbox': [x1, y1, x2, y2],
-                        'track_id': track_id,
-                        'face_flag': "UNKNOWN",
-                        'face_box': [0, 0, 0, 0],
-                        'id_flag': False,
-                        'id_card': 'none',
-                        'id_box': [0, 0, 0, 0]
-                    }
+                    person_boxes = person_results["person_boxes"]
+                    track_ids = person_results["track_ids"]
+                    people_data = []
 
+<<<<<<< HEAD
                     # Face recognition
                     try:
                         person_flag, face_boxes = process_faces(person_image)
@@ -159,87 +155,113 @@ def process_frame(camera_index, camera_ip):
                             person['face_box'] = [0, 0, 0, 0]
                     except Exception as e:
                         print(f"Error during face recognition: {e}")
+=======
+                    for person_box, track_id in zip(np.array(person_boxes).tolist(), track_ids):
+                        try:
+                            x1, y1, x2, y2 = [int(coord) for coord in person_box]
+                            frame_height, frame_width = frame.shape[:2]
+                            x1, y1 = max(0, x1), max(0, y1)
+                            x2, y2 = min(frame_width, x2), min(frame_height, y2)
+>>>>>>> c1f20d8 (first commit)
 
-                    # ID card detection (uncomment if you want to enable this)
-                    try:
-                        id_flag, id_box, id_card = detect_id_card(person_image)
-                        person['id_flag'] = id_flag
-                        person['id_box'] = id_box
-                        person['id_card'] = id_card
-                        print(f"ID card detection successful for track_id {track_id}")
-                    except Exception as e:
-                        print(f"Error during ID card detection for track_id {track_id}: {e}")
+                            if x2 <= x1 or y2 <= y1:
+                                continue
 
-                    # Append person data
-                    people_data.append(person)
+                            person_image = frame[y1:y2, x1:x2]
+                            if person_image.size == 0:
+                                continue
 
-                # Draw bounding boxes and annotations
-                draw_annotations(frame, people_data)
+                            person = {
+                                'bbox': [x1, y1, x2, y2],
+                                'track_id': track_id,
+                                'face_flag': "UNKNOWN",
+                                'face_box': [0, 0, 0, 0],
+                                'id_flag': False,
+                                'id_card': 'none',
+                                'id_box': [0, 0, 0, 0]
+                            }
 
-                save_detections(people_data, camera_data[camera_index]['camera_location'])
-                print("frame saved")
-            # Encode the frame to JPEG and then base64
-            _, jpeg = cv2.imencode('.jpg', frame)
-            current_frames[camera_index] = base64.b64encode(jpeg.tobytes()).decode('utf-8')
-        else:
-            print(f"Error capturing frame from camera {camera_index}")
+                            try:
+                                person_flag, face_box = process_faces(person_image)
+                                person['face_flag'] = person_flag
+                                person['face_box'] = face_box
+                            except Exception as e:
+                                print(f"Face recognition error: {e}")
 
+                            try:
+                                id_flag, id_box, id_card = detect_id_card(person_image)
+                                person['id_flag'] = id_flag
+                                person['id_box'] = id_box
+                                person['id_card'] = id_card
+                            except Exception as e:
+                                print(f"ID card detection error: {e}")
 
-def save_detections(people_data, camera_location):
-    current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-    for person in people_data:
-        image_name = f"person_{camera_location}_{current_time}.jpg"
-        image_path = os.path.join(IMAGE_FOLDER_PATH, image_name)
+                            people_data.append(person)
+                        except Exception as e:
+                            print(f"Error processing person: {e}")
+                            continue
 
-        os.makedirs(IMAGE_FOLDER_PATH, exist_ok=True)
-        cv2.imwrite(image_path, person['bbox'])
+                    # Draw annotations on a copy of the frame
+                    annotated_frame = frame.copy()
+                    annotated_frame = draw_annotations(annotated_frame, people_data)
 
-        existing_document = collection.find_one({"track_id": person['track_id']})
+                    # Save detections
+                    for person in people_data:
+                        try:
+                            image_path = save_person_image(frame, person['bbox'], 
+                                                         camera_data[camera_index]['camera_location'], 
+                                                         person['track_id'])
+                            
+                            if image_path:
+                                existing_document = collection.find_one({"track_id": person['track_id']})
+                                if existing_document:
+                                    collection.delete_one({"_id": existing_document["_id"]})
 
-        if existing_document:
-            # If the document exists, delete the old entry
-            collection.delete_one({"_id": existing_document["_id"]})
-            print(f"Deleted old entry with _id: {existing_document['_id']}")
+                                document = {
+                                    "_id": ObjectId(),
+                                    "location": camera_data[camera_index]['camera_location'],
+                                    "time": datetime.now().strftime("%D %I:%M %p"),
+                                    "Role": "Unidentified" if person['face_flag'] == "UNKNOWN" else "SIETIAN",
+                                    "Wearing_id_card": person['id_card'],
+                                    "image": image_path,
+                                    "track_id": person['track_id']
+                                }
+                                collection.insert_one(document)
+                        except Exception as e:
+                            print(f"Error saving detection: {e}")
+                            continue
 
-        document = {
-            "_id": ObjectId(),
-            "location": camera_location,
-            "time": datetime.now().strftime("%D %I:%M %p"),
-            "Role": "Unidentified" if person['face_flag'] == "UNKNOWN" else "SIETIAN",
-            "Wearing_id_card": person['id_card_status'],
-            "image": "/images/" + image_name,
-            "track_id": person['track_id']
-        }
-        result = collection.insert_one(document)
-        print(f"Document inserted with _id: {result.inserted_id}")
+                    # Update current frame for websocket
+                    _, jpeg = cv2.imencode('.jpg', annotated_frame)
+                    current_frames[camera_index] = base64.b64encode(jpeg.tobytes()).decode('utf-8')
 
+            except Exception as e:
+                print(f"Error in main processing loop: {e}")
+                continue
+
+    except Exception as e:
+        print(f"Fatal error in process_frame: {e}")
+    finally:
+        if cap is not None and cap.isOpened():
+            cap.release()
 
 # Start separate threads for each camera
 for index, camera in enumerate(camera_data):
     executor.submit(process_frame, index, camera["camera_ip"])
 
-
-# WebSocket endpoint for video feed
 @app.websocket("/ws/video/{camera_id}/")
 async def video_feed(websocket: WebSocket, camera_id: int):
     await websocket.accept()
-
-    while True:
-        if camera_id in current_frames:
-            # Decode the current frame from base64 to an image
-            frame_data = base64.b64decode(current_frames[camera_id])
-            frame = cv2.imdecode(np.frombuffer(frame_data, dtype=np.uint8), cv2.IMREAD_COLOR)
-
-            # Send the modified frame to the client as base64
-            _, jpeg = cv2.imencode('.jpg', frame)
-            frame_b64 = base64.b64encode(jpeg.tobytes()).decode('utf-8')
-            await websocket.send_text(f'{{"frame": "{frame_b64}"}}')
-
-            await asyncio.sleep(0.1)  # Sleep to prevent excessive CPU usage
-
+    try:
+        while True:
+            if camera_id in current_frames:
+                await websocket.send_text(f'{{"frame": "{current_frames[camera_id]}"}}')
+            await asyncio.sleep(0.1)
+    except Exception as e:
+        print(f"WebSocket error: {e}")
+    finally:
+        await websocket.close()
 
 if __name__ == "__main__":
-    # Run the FastAPI server
     import uvicorn
-
     uvicorn.run(app, host="0.0.0.0", port=7000)
