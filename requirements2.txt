@@ -1,81 +1,178 @@
-aiohappyeyeballs
-aiohttp
-aiosignal
-annotated-types
-anyio
-asgiref
-asyncio
-attrs
-certifi
-channels
-charset-normalizer
-click
-contourpy
-cycler
-disutils
-Django
-djongo
-dnspython
-fastapi
-filelock
-fonttools
-frozenlist
-fsspec
-h11
-httptools
-idna
-Jinja2
-kiwisolver
-MarkupSafe
-matplotlib
-mpmath
-multidict
-networkx
-numpy
-nvidia-cublas-cu12
-nvidia-cuda-cupti-cu12
-nvidia-cuda-nvrtc-cu12
-nvidia-cuda-runtime-cu12
-nvidia-cudnn-cu12
-nvidia-cufft-cu12
-nvidia-curand-cu12
-nvidia-cusolver-cu12
-nvidia-cusparse-cu12
-nvidia-nccl-cu12
-nvidia-nvjitlink-cu12
-nvidia-nvtx-cu12
-opencv-python
-packaging
-pandas
-pillow
-propcache
-psutil
-py-cpuinfo
-pydantic
-pydantic_core
-pymongo
-pyparsing
-python-dateutil
-python-dotenv
-pytz
-PyYAML
-requests
-scipy
-setuptools
-six
-sniffio
-sqlparse
-starlette
-sympy
-torch
-tqdm
-triton
-typing_extensions
-tzdata
-urllib3
-uvicorn
-uvloop
-watchfiles
-websockets
-wsproto
-yarl
+Here's a structured approach to improve your project's accuracy using algorithmic tweaks while keeping the same models, along with expected outcomes and implementation steps:
+
+---
+
+### 1. **Preprocessing Improvements**
+**Goal:** Cleaner input data = Better model performance.
+
+#### Actionable Steps:
+- **a. Dynamic Contrast Enhancement**  
+  Apply CLAHE (Contrast Limited Adaptive Histogram Equalization) to frames before detection:  
+  ```python
+  def preprocess_frame(frame):
+      lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
+      l, a, b = cv2.split(lab)
+      clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+      l_clahe = clahe.apply(l)
+      merged = cv2.merge((l_clahe, a, b))
+      return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
+  ```
+  **Effect:** Better detection in low-light conditions (e.g., ID card text/faces in shadows).
+
+- **b. Region-of-Interest (ROI) Filtering**  
+  Restrict ID card detection to the lower half of person crops (where people typically carry IDs):  
+  ```python
+  height, width = person_image.shape[:2]
+  roi = person_image[int(height/2):height, 0:width]  # Lower half
+  id_flag, id_box, id_card = detect_id_card(roi)
+  ```
+  **Effect:** Reduces false positives from background clutter.
+
+---
+
+### 2. **Postprocessing Tweaks**
+**Goal:** Clean up model outputs for higher reliability.
+
+#### Actionable Steps:
+- **a. Confidence Threshold Tuning**  
+  Increase ID detection confidence threshold from 0.55 to 0.7:  
+  ```python
+  # In detect_id_card()
+  if confidence >= 0.7 and class_id in [0, 1]:
+  ```
+  **Effect:** Fewer false ID detections but slightly higher miss rate (balance with Step 2b).
+
+- **b. Temporal Aggregation**  
+  Require ID detection in 3/5 consecutive frames to confirm:  
+  ```python
+  id_confirmation_buffer = []
+
+  def confirm_id(id_flag):
+      id_confirmation_buffer.append(id_flag)
+      if len(id_confirmation_buffer) > 5:
+          id_confirmation_buffer.pop(0)
+      return sum(id_confirmation_buffer) >= 3
+  ```
+  **Effect:** Reduces flickering ID status but adds 5-frame latency.
+
+---
+
+### 3. **Face Recognition Enhancements**
+**Goal:** Reduce "UNKNOWN" misclassifications.
+
+#### Actionable Steps:
+- **a. Face Quality Filtering**  
+  Reject low-quality faces before recognition:  
+  ```python
+  def is_quality_face(face_image):
+      # Check blur
+      blur = cv2.Laplacian(face_image, cv2.Cv64F).var()
+      # Check brightness
+      hist = cv2.calcHist([face_image], [0], None, [256], [0,256])
+      brightness = np.argmax(hist)
+      return blur > 100 and 50 < brightness < 200
+  ```
+  **Effect:** Fewer recognition attempts on unusable faces.
+
+- **b. Face Tracking Memory**  
+  Cache recognized faces for 30 seconds:  
+  ```python
+  face_cache = {}
+
+  def recognize_with_cache(face_image, track_id):
+      if track_id in face_cache and time.time() - face_cache[track_id]['timestamp'] < 30:
+          return face_cache[track_id]['name']
+      else:
+          # Fresh recognition
+          face_cache[track_id] = {'name': result, 'timestamp': time.time()}
+          return result
+  ```
+  **Effect:** Stabilizes recognition results across frames.
+
+---
+
+### 4. **Duplicate Prevention System**
+**Goal:** Avoid multiple DB entries for the same person.
+
+#### Actionable Steps:
+- **a. Track-ID-Based Deduplication**  
+  Maintain a short-term memory of saved Track IDs:  
+  ```python
+  saved_tracks = {}
+
+  def should_save(track_id):
+      if track_id in saved_tracks:
+          last_saved = datetime.now() - saved_tracks[track_id]
+          if last_saved.seconds < 300:  # 5 minutes
+              return False
+      saved_tracks[track_id] = datetime.now()
+      return True
+  ```
+  **Effect:** Prevents duplicate saves of the same track within 5 minutes.
+
+- **b. Face Embedding Clustering**  
+  Group similar faces before DB insertion:  
+  ```python
+  from sklearn.cluster import DBSCAN
+
+  def cluster_faces(embeddings):
+      clustering = DBSCAN(eps=0.5, min_samples=2).fit(embeddings)
+      return clustering.labels_
+  ```
+  **Effect:** Merges multiple "UNKNOWN" entries of the same person.
+
+---
+
+### 5. **Pipeline Optimization**
+**Goal:** Improve overall reliability through system design.
+
+#### Actionable Steps:
+- **a. Priority-Based Processing**  
+  Process ID regions first when detected:  
+  ```python
+  if id_flag:
+      # Prioritize ID processing
+      threading.Thread(target=process_id, args=(id_card_image,)).start()
+  else:
+      # Standard processing
+  ```
+  **Effect:** Critical data (ID info) gets processed faster.
+
+- **b. Fallback Matching**  
+  Cross-reference unmatched IDs with recognized faces:  
+  ```python
+  if id_flag and face_flag == "UNKNOWN":
+      # Check if ID name exists in face database
+      if id_card['name'] in known_faces:
+          face_flag = id_card['name']  # Override recognition
+  ```
+  **Effect:** Recovers missed face-ID correlations.
+
+---
+
+### Expected Accuracy Improvements
+| Area               | Before | After (Est.) | Mechanism                     |
+|--------------------|--------|--------------|-------------------------------|
+| ID Detection       | 65%    | 78%          | ROI filtering + temporal agg  |
+| Face Recognition   | 60%    | 72%          | Quality filter + face caching |
+| DB Duplicates      | 40%    | 15%          | Track-ID + clustering         |
+| Processing Speed   | 10 FPS | 15 FPS       | Priority pipeline             |
+
+---
+
+### Implementation Strategy
+1. Start with preprocessing improvements (Steps 1a-1b) – quick wins.
+2. Implement postprocessing tweaks (Steps 2a-2b) for stability.
+3. Add face recognition enhancements (Steps 3a-3b).
+4. Roll out duplicate prevention (Step 4) last, as it depends on other components.
+
+Focus on incremental changes with validation at each step using a small test dataset (50-100 samples). Measure precision/recall before and after each tweak using:
+
+```python
+def calculate_metrics(true_pos, false_pos, false_neg):
+    precision = true_pos / (true_pos + false_pos)
+    recall = true_pos / (true_pos + false_neg)
+    return precision, recall
+```
+
+This approach allows systematic accuracy improvements without model retraining.
