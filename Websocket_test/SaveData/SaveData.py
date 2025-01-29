@@ -6,7 +6,7 @@ from pymongo import MongoClient
 from bson.objectid import ObjectId
 import logging
 from .FaceEmbeddings import FaceEmbeddingSystem
-from ..Detection.Detection.settings import STATIC_ROOT
+from Detection.Detection.settings import STATIC_ROOT
 
 
 IMAGE_PATH = os.path.join(STATIC_ROOT, 'images')
@@ -82,7 +82,7 @@ class DataManager:
                     'face_box': context['face_box'],
                     'id_card':context['id_card'],
                     'id_box': context['id_box'],
-                    'image_path': 'images / '+image_name,
+                    'image_path': 'static/images / '+image_name,
                 }
                 image_path =os.path.join(self.image_folder , image_name)
                 # Save image only for new faces
