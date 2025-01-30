@@ -75,11 +75,12 @@ def detection_view(request):
         outsiders = []
         non_id_holders = []
 
+
         # Categorize data
         for document in data:
             document['_id'] = str(document['_id'])  # Convert ObjectId to string for JSON compatibility
             # role = document.get('role', '').lower()  # Ensure role field is processed in lowercase
-
+            document['face_flag'] = document['face_flag'][0]
             # Categorize by role and ID card status
             if document['face_flag'][0] == 'UNKNOWN':
                 outsiders.append(document)
