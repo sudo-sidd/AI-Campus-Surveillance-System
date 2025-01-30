@@ -7,6 +7,7 @@ from bson.objectid import ObjectId
 import logging
 from .FaceEmbeddings import FaceEmbeddingSystem
 from Detection.Detection.settings import STATIC_ROOT
+import json
 
 
 IMAGE_PATH = os.path.join(STATIC_ROOT, 'images')
@@ -24,33 +25,31 @@ class DataManager:
                 logger.warning("No face detected")
                 return None
 
-            # Check for existing person
-            existing_person_id = self.face_system.find_matching_person(face_embeddings)
-
-            if existing_person_id:
-                # Update existing person's record
-                logger.info(f"Updating existing person: {existing_person_id}")
-
-                update_data = {
+            # Check if face already exists
+            existing_face = self.face_system.find_matching_person(face_embeddings)
+            if existing_face:
+                logger.info(f"Face matches existing person ID: {existing_face}")
+                # Update embeddings for existing person
+                doc_id = ObjectId()
+                self.face_system._save_embeddings({
+                    'doc_id': doc_id,
+                    'embedding': face_embeddings
+                })
+                
+                # Save only the new document reference
+                document = {
+                    "_id": doc_id,
                     "timestamp": datetime.now(),
+                    "person_id": existing_face,  # Link to existing person,
                     "camera_location": context['camera_location'],
                     "id_flag": context['id_flag'],
-                    "bbox": context['bbox'],
-                    "track_id": context['track_id'],
-                    "face_flag": context['face_flag'],
-                    "face_box": context['face_box'],
-                    "id_card": context['id_card'],
-                    "id_box": context['id_box'],
+                    'bbox': context['bbox'],
+                    'track_id': context['track_id'],
+                    'face_flag': context['face_flag'],
+                    'face_box': context['face_box'],
+                    'id_card':context['id_card'],
+                    'id_box': context['id_box'],
                 }
-
-                # Update the most recent entry for this person
-                self.collection.update_one(
-                    {"person_id": existing_person_id},
-                    {"$set": update_data},
-                    upsert=False  # Don't create new doc if missing
-                )
-                return existing_person_id
-
             else:
                 # Save new person with embeddings
                 logger.info("Saving new person")
