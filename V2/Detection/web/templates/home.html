@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Home - Sri Shakthi{% endblock %}
+
+{% block content %}
+<div class="row" id="cameraGrid">
+    <!-- Camera grid will be dynamically loaded here -->
+</div>
+
+<!-- Modal for Camera Feed -->
+<div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cameraModalLabel">Camera Feed</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeCamera()"></button>
+            </div>
+            <div class="modal-body">
+                <img id="modalCameraContent" class="img-fluid" alt="Camera feed">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- Custom JS -->
+<script src="{% static 'JS/home.js' %}"></script>

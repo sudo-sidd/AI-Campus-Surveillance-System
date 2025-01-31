@@ -1,0 +1,47 @@
+/* Sidebar Styles */
+.sidebar {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 1000;
+    top: 0;
+    right: 0;
+    background-color: #1f2937; /* Dark background */
+    overflow-x: hidden;
+    transition: 0.5s;
+    padding-top: 60px;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar a {
+    padding: 12px 16px;
+    text-decoration: none;
+    font-size: 18px;
+    color: #d1d5db; /* Light text color */
+    display: block;
+    transition: 0.3s;
+}
+
+.sidebar a:hover {
+    color: #ffffff; /* White text on hover */
+    background-color: #374151; /* Darker background on hover */
+}
+
+.sidebar .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 24px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+/* Settings Icon */
+#settings-icon {
+    cursor: pointer;
+    transition: transform 0.3s;
+}
+
+#settings-icon:hover {
+    transform: rotate(90deg);
+}
