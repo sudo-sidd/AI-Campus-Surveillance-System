@@ -15,16 +15,16 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Initialize YOLO face detection model
 # yolo_model = YOLO(os.path.join(BASE_DIR, "face_detection", "yolo", "weights", "yolo11n-face.pt"))
-yolo_model = YOLO('/version_1.0/Face_recognition/face_detection/yolo/weights/yolo11n-face.pt').to(device)
+yolo_model = YOLO('/V1/Face_recognition/face_detection/yolo/weights/yolo11n-face.pt').to(device)
 # Initialize ArcFace recognition model
 recognizer = iresnet_inference(
     model_name="r100",
-    path='/version_1.0/Face_recognition/face_recognition/arcface/weights/glink360k_cosface_r100_fp16_0.1.pth',
+    path='/V1/Face_recognition/face_recognition/arcface/weights/glink360k_cosface_r100_fp16_0.1.pth',
     device=device,
 )
 
 # Load pre-saved face features
-feature_path = '/version_1.0/Face_recognition/datasets/face_features/glink360k_featuresALL'
+feature_path = '/V1/Face_recognition/datasets/face_features/glink360k_featuresALL'
 images_name_path = os.path.join(feature_path, "images_name.npy")
 images_emb_path = os.path.join(feature_path, "images_emb.npy")
 images_names = np.load(images_name_path)
