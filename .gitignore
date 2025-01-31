@@ -1,17 +1,17 @@
-/Websocket_test/Face_recognition/face_recognition/arcface/weights/
-/Websocket_test/Face_recognition/__pycache__
-/Websocket_test/Face_recognition/face_recognition/arcface/__pycache__
-/Websocket_test/Detection/Detection/__pycache__
-/Websocket_test/Detection/web/__pycache__
-/Websocket_test/ID_detection/__pycache__
-/Websocket_test/ID_detection/yolov11/__pycache__
+/version 1.0/Face_recognition/face_recognition/arcface/weights/
+/version 1.0/Face_recognition/__pycache__
+/version 1.0/Face_recognition/face_recognition/arcface/__pycache__
+/version 1.0/Detection/Detection/__pycache__
+/version 1.0/Detection/web/__pycache__
+/version 1.0/ID_detection/__pycache__
+/version 1.0/ID_detection/yolov11/__pycache__
 /venv
-/Websocket_test/Detection/web/static/images
-Websocket_test/Face_recognition/face_alignment/__pycache__
-Websocket_test/project files
+/version 1.0/Detection/web/static/images
+version 1.0/Face_recognition/face_alignment/__pycache__
+version 1.0/project files
 env3.7
 Previous_pipeline.tldr
 project files.zip
 requirements2.txt
 FaceRecognizer
-Websocket_test/save.py
+version 1.0/save.py
