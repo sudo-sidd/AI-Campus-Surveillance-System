@@ -4,6 +4,16 @@ window.onload = function () {
     const cameraGrid = document.getElementById('cameraGrid');
     let cameras = [];
 
+    const  IP = '192.168.191.86';
+    // fetch('api/env/')
+    //     .then(response => response.json())
+    //     .then(env => {f
+    //         console.log(response.json);
+    //         IP = env.IP;
+    //         console.log(IP);
+    //     })
+    //     .catch(error => console.error('Error Fetching environment variable:',error));
+
     // Fetch camera data from the backend
     fetch('/api/cameras/')  // Assuming your Django endpoint to serve the camera data
         .then(response => response.json())
@@ -28,7 +38,7 @@ window.onload = function () {
             cameraDiv.innerHTML = `
                 <div class="card" style="width: 100%; max-width: 350px; height: auto; border: 1px solid #ddd; border-radius: 8px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
                     <img id="video${index}" class="card-img-top" src="" alt="${camera.camera_location} Live Feed" style="height: 180px; object-fit: cover; border-radius: 8px 8px 0 0;">
-                    <div class="card-body d-flex flex-column justify-content-end" style="padding: 16px;">
+                    <div class="card-body d-flex flex-column justify-content-end" style="padding : 1px">
                         <p class="card-text mb-0" style="font-size: 16px; font-weight: 600; color: #333; text-align: center;">${camera.camera_location}</p>
                     </div>
                 </div>
@@ -52,7 +62,8 @@ window.onload = function () {
 
     // Function to open WebSocket connection for each camera and update the feed
     function openCameraFeed(camera, index) {
-        const socketUrl = `ws://192.168.28.86:7000/ws/video/${index}/`;  // WebSocket URL
+        const socketUrl = `ws://${IP}:7000/ws/video/${index}/`;  // WebSocket URL
+        console.log('Socket URL : ',socketUrl);
         const socket = new WebSocket(socketUrl);
 
         socket.onopen = function () {
@@ -65,9 +76,8 @@ window.onload = function () {
 
             // Update the camera feed image dynamically
             const videoElement = document.getElementById(`video${index}`);
-            if (true) {
-                videoElement.src = `data:image/jpeg;base64,${frame}`;  // Set the base64-encoded image
-            }
+            videoElement.src = `data:image/jpeg;base64,${frame}`;  // Set the base64-encoded image
+
         };
 
         socket.onerror = function (error) {

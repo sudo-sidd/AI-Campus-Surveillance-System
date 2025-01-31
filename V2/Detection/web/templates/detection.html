@@ -14,7 +14,68 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static '/CSS/style.css' %}">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+    <!-- Sidebar CSS -->
+    <style>
+        /* Sidebar Styles */
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 999;
+            top: 0;
+            right: 0;
+            background-color: rgba(44, 62, 80, 0.95); /* Translucent dark blue background */
+            overflow-x: hidden;
+            transition: width 0.3s ease-in-out; /* Smooth transition */
+            padding-top: 60px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            border-left: 2px solid #34495e; /* Left border for definition */
+            backdrop-filter: blur(8px); /* Blur effect for modern look */
+        }
+    
+        .sidebar a {
+            padding: 15px 20px; /* Better spacing */
+            text-decoration: none;
+            font-size: 18px; /* Smaller font size */
+            color: #bdc3c7; /* Light gray text */
+            display: block;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth hover effect */
+            border-bottom: 1px solid rgba(52, 73, 94, 0.5); /* Translucent separator between items */
+        }
+    
+        .sidebar a:hover {
+            background-color: rgba(52, 73, 94, 0.7); /* Translucent darker background on hover */
+            color: #ffffff; /* White text on hover */
+        }
+    
+        .sidebar .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 30px; /* Smaller close button */
+            color: #bdc3c7; /* Light gray color */
+            cursor: pointer;
+            transition: color 0.3s ease; /* Smooth hover effect */
+        }
+    
+        .sidebar .close-btn:hover {
+            color: #ffffff; /* White color on hover */
+        }
+    
+        #settings-icon {
+            font-size: 30px;
+            cursor: pointer;
+            color: #2c3e50; /* Matching sidebar color */
+            transition: color 0.3s ease; /* Smooth hover effect */
+        }
+    
+        #settings-icon:hover {
+            color: #34495e; /* Darker color on hover */
+        }
+    </style>
+    
 </head>
 <body>
 
@@ -30,9 +91,21 @@
                     <p class="text-muted mb-1">Approved by AICTE, New Delhi • Affiliated to Anna University, Chennai</p>
                     <p class="text-muted">An Autonomous Institution</p>
                 </div>
+                <div class="col-md-2 text-right">
+                    <!-- Settings Icon -->
+                    <span id="settings-icon" class="text-success" onclick="openSidebar()">&#9881;</span>
+                </div>
             </div>
         </div>
     </header>
+
+    <!-- Sidebar -->
+    <div id="settingsSidebar" class="sidebar">
+        <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">×</a>
+        <a href="{% url 'camera_id' %}">Add / Remove Camera's</a>
+        <!-- make the button for clear db when user click it, it wants to show pop up -->
+        <a href="" onclick="cleardb()">Clear DB</a>
+    </div>
 
     <!-- Buttons for filtering -->
     <div class="buttons text-center my-4">
@@ -61,15 +134,15 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>
-                            {% if outsider.image %}
-                                <img src="{% static outsider.image %}" alt="Outsider Image" style="width: 100px;" class="clickable-image" onclick="openModal('{% static outsider.image %}')">
+                            {% if outsider.image_path %}
+                                <img src="{% static outsider.image_path %}" alt="Outsider Image" style="width: 100px;" class="clickable-image" onclick="openModal('{% static outsider.image %}')">
                             {% else %}
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 100px;">
                             {% endif %}
                         </td>
-                        <td>{{ outsider.Wearing_id_card }}</td>
-                        <td>{{ outsider.time}}</td>
-                        <td>{{ outsider.location }}</td>
+                        <td>{{ outsider.id_flag }}</td>
+                        <td>{{ outsider.timestamp}}</td>
+                        <td>{{ outsider.camera_location }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -94,16 +167,16 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>
-                            {% if non_id_holder.image %}
-                                <img src="{% static non_id_holder.image %}" alt="Non-ID Holder Image" style="width: 100px;" class="clickable-image">
+                            {% if non_id_holder.image_path %}
+                                <img src="{% static non_id_holder.image_path %}" alt="Non-ID Holder Image" style="width: 100px;" class="clickable-image">
                             {% else %}
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 100px;">
                             {% endif %}
                         </td>
-                        <td>{{ non_id_holder.Wearing_id_card }}</td>
-                        <td>{{ non_id_holder.time }}</td>
-                        <td>{{ non_id_holder.Role }}</td>
-                        <td>{{ non_id_holder.location }}</td>
+                        <td>{{ non_id_holder.id_flag }}</td>
+                        <td>{{ non_id_holder.timestamp }}</td>
+                        <td>{{ non_id_holder.face_flag }}</td>
+                        <td>{{ non_id_holder.camera_location }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -173,6 +246,17 @@
             behavior: 'smooth' // Smooth scroll
         });
     };
+    </script>
+
+    <!-- Sidebar Toggle JavaScript -->
+    <script>
+        function openSidebar() {
+            document.getElementById("settingsSidebar").style.width = "250px";  // Set width for the sidebar
+        }
+
+        function closeSidebar() {
+            document.getElementById("settingsSidebar").style.width = "0";  // Set width to 0 to hide the sidebar
+        }
     </script>
 </body>
 </html>

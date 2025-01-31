@@ -4,31 +4,78 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camera Fullscreen</title>
-    
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="{% static 'css/fullscreen.css' %}">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+            overflow: hidden;
+        }
+        .fullscreen-container {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        #cameraFeed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none;
+        }
+        .exit-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        .exit-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .loading {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
 </head>
 <body>
-
     <div class="fullscreen-container">
-        <!-- Exit Fullscreen Button -->
-        <button class="exit-button" onclick="window.history.back()">Exit Fullscreen</button>
-        
-        <!-- Camera Feed -->
-        <img id="cameraFeed" src="" alt="Camera Feed" class="img-fluid">
+        <button class="exit-button" onclick="window.history.back()">&larr; Exit</button>
+        <div class="loading" id="loadingSpinner"></div>
+        <img id="cameraFeed" src="" alt="Camera Feed">
     </div>
-
     <script>
-        // Get camera ID from the URL query parameters
         const urlParams = new URLSearchParams(window.location.search);
         const cameraId = urlParams.get('camera');
         const cameraFeed = document.getElementById('cameraFeed');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const IP = '192.168.191.86';
 
         if (cameraId) {
-            const socketUrl = `ws://192.168.28.86:7000/ws/video/${cameraId}/`;  // WebSocket URL
+            const socketUrl = `ws://${IP}:7000/ws/video/${cameraId}/`;
             const socket = new WebSocket(socketUrl);
 
             socket.onopen = function () {
@@ -38,9 +85,9 @@
             socket.onmessage = function (event) {
                 const data = JSON.parse(event.data);
                 const frame = data.frame;
-
-                // Update the camera feed image dynamically
-                cameraFeed.src = `data:image/jpeg;base64,${frame}`;  // Set the base64-encoded image
+                cameraFeed.src = `data:image/jpeg;base64,${frame}`;
+                cameraFeed.style.display = 'block';
+                loadingSpinner.style.display = 'none';
             };
 
             socket.onerror = function (error) {
@@ -54,6 +101,5 @@
             console.error('No camera ID provided!');
         }
     </script>
-
 </body>
 </html>
