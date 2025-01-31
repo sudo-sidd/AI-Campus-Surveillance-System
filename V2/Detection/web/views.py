@@ -6,7 +6,12 @@ from django.http import HttpResponse, StreamingHttpResponse
 import json
 import os
 from django.views.decorators.csrf import csrf_exempt
-from Detection.settings import STATIC_ROOT
+# from Detection.settings import STATIC_ROOT, IP
+# import requests
+# from dotenv import dotenv_values
+
+# config = dotenv_values("./.env")
+# IP = config.get("IP")
 
 def my_view(request):
     db = get_database()
@@ -47,6 +52,13 @@ def insert_document(request):
 def home(request):
     return render(request, 'home.html')
 
+def get_env_var(request):
+    env_vars = {
+        "IP": IP,
+    }
+    print(env_vars)
+    return JsonResponse(env_vars, safe = False)
+
 def detection_view(request):
     """
     View to categorize and display individuals based on their role and ID card status.
@@ -67,14 +79,15 @@ def detection_view(request):
         for document in data:
             document['_id'] = str(document['_id'])  # Convert ObjectId to string for JSON compatibility
             # role = document.get('role', '').lower()  # Ensure role field is processed in lowercase
-
-            # Categorize by role and ID card status
-            if document['Role'] == 'Unidentified':
+            # print(1,document)
+            document['face_flag'] = document['face_flag']
+            if document['face_flag'] == 'UNKNOWN':
                 outsiders.append(document)
-            if (document["Wearing_id_card"] == 'false' or document['Wearing_id_card'] == 'False' or document['Wearing_id_card'] == False) and document['Role']!='Unidentified':  # Check ID card status
+            if (document["id_flag"] == False):  # Check ID card status
                 non_id_holders.append(document)
 
         # Debugging (Optional)
+        # print(data)
         # print(f"Outsiders: {outsiders}\n")
         # print(f"Non-ID Holders: {non_id_holders}\n")
         
