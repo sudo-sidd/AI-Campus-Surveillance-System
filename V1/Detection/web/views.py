@@ -6,6 +6,12 @@ from django.http import HttpResponse, StreamingHttpResponse
 import json
 import os
 from django.views.decorators.csrf import csrf_exempt
+from Detection.settings import STATIC_ROOT, IP
+import requests
+# from dotenv import dotenv_values
+
+# config = dotenv_values("./.env")
+# IP = config.get("IP")
 
 def my_view(request):
     db = get_database()
