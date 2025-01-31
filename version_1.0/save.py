@@ -30,7 +30,7 @@ if __name__ == "__main__":
 
 
 
-# test_image_path =  '/mnt/sda1/old- Face_rec-ID_detection/version 1.0/test_img2.jpg'
+# test_image_path =  '/mnt/sda1/old- Face_rec-ID_detection/version_1.0/test_img2.jpg'
 # test_image = cv.imread(test_image_path)
 
 

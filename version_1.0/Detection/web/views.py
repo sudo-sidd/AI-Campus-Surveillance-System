@@ -80,7 +80,7 @@ def detection_view(request):
             document['_id'] = str(document['_id'])  # Convert ObjectId to string for JSON compatibility
             # role = document.get('role', '').lower()  # Ensure role field is processed in lowercase
             # print(1,document)
-            document['face_flag'] = document['face_flag'][0]
+            document['face_flag'] = document['face_flag']
             if document['face_flag'] == 'UNKNOWN':
                 outsiders.append(document)
             if (document["id_flag"] == False):  # Check ID card status
