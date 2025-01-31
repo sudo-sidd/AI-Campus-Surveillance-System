@@ -1,0 +1,88 @@
+<!-- fullscreen.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Fullscreen</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: black;
+        }
+        .fullscreen-container {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        #cameraFeed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .exit-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 18px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="fullscreen-container">
+        <button class="exit-button" onclick="window.history.back()">Exit Fullscreen</button>
+        <img id="cameraFeed" src="" alt="Camera Feed">
+    </div>
+
+    <script>
+        // Get camera ID from the URL query parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const cameraId = urlParams.get('camera');
+        const cameraFeed = document.getElementById('cameraFeed');
+
+        const  IP = '192.168.28.34';
+
+        if (cameraId) {
+            const socketUrl = `ws://${IP}:7000/ws/video/${cameraId}/`;  // WebSocket URL
+            const socket = new WebSocket(socketUrl);
+            socket.onopen = function () {
+                console.log(`Connected to WebSocket for Camera ${cameraId}`);
+            };
+
+            socket.onmessage = function (event) {
+                const data = JSON.parse(event.data);
+                const frame = data.frame;
+
+                // Update the camera feed image dynamically
+                cameraFeed.src = `data:image/jpeg;base64,${frame}`;  // Set the base64-encoded image
+            };
+
+            socket.onerror = function (error) {
+                console.error(`WebSocket error for Camera ${cameraId}:`, error);
+            };
+
+            socket.onclose = function () {
+                console.log(`Disconnected from WebSocket for Camera ${cameraId}`);
+            };
+        } else {
+            console.error('No camera ID provided!');
+        }
+    </script>
+
+</body>
+</html>
