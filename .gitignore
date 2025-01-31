@@ -1,17 +1,17 @@
-/version_1.0/Face_recognition/face_recognition/arcface/weights/
-/version_1.0/Face_recognition/__pycache__
-/version_1.0/Face_recognition/face_recognition/arcface/__pycache__
-/version_1.0/Detection/Detection/__pycache__
-/version_1.0/Detection/web/__pycache__
-/version_1.0/ID_detection/__pycache__
-/version_1.0/ID_detection/yolov11/__pycache__
+/V1/Face_recognition/face_recognition/arcface/weights/
+/V1/Face_recognition/__pycache__
+/V1/Face_recognition/face_recognition/arcface/__pycache__
+/V1/Detection/Detection/__pycache__
+/V1/Detection/web/__pycache__
+/V1/ID_detection/__pycache__
+/V1/ID_detection/yolov11/__pycache__
 /venv
-/version_1.0/Detection/web/static/images
-version_1.0/Face_recognition/face_alignment/__pycache__
-version_1.0/project files
+/V1/Detection/web/static/images
+V1/Face_recognition/face_alignment/__pycache__
+V1/project files
 env3.7
 Previous_pipeline.tldr
 project files.zip
 requirements2.txt
 FaceRecognizer
-version_1.0/save.py
+V1/save.py
