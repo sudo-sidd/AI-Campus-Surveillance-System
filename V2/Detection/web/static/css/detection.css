@@ -166,3 +166,57 @@
     color: #34495e;
     /* Darker color on hover */
 }
+
+.close-btn {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    color: #000000;
+    font-size: 28px;
+    font-weight: bold;
+    background-color: transparent;  /* Bootstrap danger color */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1001;
+}
+
+.close-btn:hover {
+    transform: scale(1.1);
+}
+
+.modal-content {
+    position: relative;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 20%;
+    max-height: 50vh;
+    background-color: white;
+}
+
+#modalImage {
+    max-width: 80%;
+    max-height: 90vh;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
