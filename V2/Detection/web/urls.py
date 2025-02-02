@@ -11,4 +11,5 @@ urlpatterns = [
     path('delete-data/<int:index>/', views.delete_data, name='delete_data'),
     path('clear_database/',views.delete_all_documents, name="clear_database"),
     path('fullscreen/', views.camera_fullscreen, name='camera_fullscreen'),
+    path('api/get_env/', views.get_env_values)
 ]   

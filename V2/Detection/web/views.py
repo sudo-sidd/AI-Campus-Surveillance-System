@@ -8,10 +8,16 @@ import os
 from django.views.decorators.csrf import csrf_exempt
 # from Detection.settings import STATIC_ROOT, IP
 # import requests
-# from dotenv import dotenv_values
+from dotenv import dotenv_values
 
-# config = dotenv_values("./.env")
-# IP = config.get("IP")
+config = dotenv_values("./.env")
+IP = config.get("IP")
+
+def get_env_values(request):
+    env_vars = {
+        "IP": IP,
+    }
+    return JsonResponse(env_vars, safe = False)
 
 def my_view(request):
     db = get_database()
@@ -24,30 +30,6 @@ def my_view(request):
 
     return JsonResponse(data, safe=False)  # Return the modified data as a JSON response
 
-def insert_document(request):
-    db = get_database()
-    from datetime import datetime, timezone
-    collection = db['DatabaseDB']
-    reg_no = 123456789012
-    location = 'test'
-    role = 'insider'
-    wearing_id_card = input("Is wearing ID card? (true/false): ").strip().lower() == 'false'
-    image = {}  # Replace with actual image data if available, or leave as empty dict
-    time = datetime.now().strftime("%I:%M %p")
-
-    # Generate random _id and get current time
-    document = {
-        "_id": ObjectId(),  # Generate a random ObjectId
-        "Reg_no": reg_no,
-        "location": location,
-        "time": time,  # Use current UTC time
-        "Role": role,
-        "Wearing_id_card": wearing_id_card,
-        "image": image
-    }
-
-    collection.insert_one(document)
-    return JsonResponse({"status": "success"})
 
 def home(request):
     return render(request, 'home.html')

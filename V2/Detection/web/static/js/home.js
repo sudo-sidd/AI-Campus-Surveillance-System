@@ -4,15 +4,13 @@ window.onload = function () {
     const cameraGrid = document.getElementById('cameraGrid');
     let cameras = [];
 
-    const  IP = '192.168.191.86';
-    // fetch('api/env/')
-    //     .then(response => response.json())
-    //     .then(env => {f
-    //         console.log(response.json);
-    //         IP = env.IP;
-    //         console.log(IP);
-    //     })
-    //     .catch(error => console.error('Error Fetching environment variable:',error));
+    let IP;
+    fetch('/api/get_env/')
+        .then(response => response.json())
+        .then(env => {
+            IP = env.IP;
+        })
+        .catch(error => console.error('Error Fetching environment variable:',error));
 
     // Fetch camera data from the backend
     fetch('/api/cameras/')  // Assuming your Django endpoint to serve the camera data
