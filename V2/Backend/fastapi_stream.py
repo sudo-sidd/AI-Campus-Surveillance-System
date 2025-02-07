@@ -108,6 +108,7 @@ def process_frame(camera_index, camera_ip, camera_location):
                 ret, frame = cap.read()
                 if ret:
                     # Update current frame for websocket
+                    frame = cv2.flip(frame, 1)
                     _, jpeg = cv2.imencode('.jpg', frame)
                     current_frames[camera_index] = base64.b64encode(jpeg.tobytes()).decode('utf-8')
 

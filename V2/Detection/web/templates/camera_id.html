@@ -72,26 +72,27 @@
             text-align: center;
         }
 
-        .btn-back {
-            margin-bottom: 10px;
-            padding: 5px 5px;
-            font-size: 16px;
+        .exit-button {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 12px 18px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
-            background-color: #000000;
-            color: #fff;
-            text-decoration: none;
-            display: inline-block;
+            transition: background 0.3s ease;
         }
-
-        .btn-back:hover {
-            background-color: #3c3c3c;
+        .exit-button:hover {
+            background: #727171;
         }
     </style>
 </head>
 <body>
-    <a href="javascript:void(0);" class="btn-back" style="position: absolute; top: 10px; left: 10px;" onclick="goBack()">Back to Previous Page</a>
+    <button class="exit-button" onclick="window.history.back()">&larr; Back</button>
     <div class="container">
         <div class="table-container">
             <h2>Camera List</h2>

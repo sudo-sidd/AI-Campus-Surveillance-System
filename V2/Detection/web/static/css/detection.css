@@ -31,6 +31,7 @@
 }
 
 .table img {
+    margin-left: 30%;
     width: 200px;
     /* Increase from 80px to 100px */
     height: 200px;
