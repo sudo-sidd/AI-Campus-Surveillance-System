@@ -5,14 +5,15 @@ import os
 
 # Set up paths and load YOLO model
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(BASE_DIR, "models", "person+id", "best.pt")
+model_path = os.path.join(BASE_DIR, "models","ID-only.pt")
 model = YOLO(model_path)
 
 # Define colors for bounding boxes
 color = (0, 255, 0)
 
 # Class names for the IDs
-class_names = {0: "III-id", 1: "II-id", 2: "Person"}  # Adjust according to your model's class names
+# class_names = {0: "III-id", 1: "II-id", 2: "Person"}  # Adjust according to your model's class names
+class_names = {0:"ID"}  # Adjust according to your model's class names
 
 # Function to detect ID cards
 def detect_id_card(frame):
@@ -26,7 +27,7 @@ def detect_id_card(frame):
         # Get confidence and class ID
         confidence = result.conf.item()
         class_id = int(result.cls.item())
-        if confidence >= 0.55 and class_id in [0, 1]:  # III-id: 0, II-id: 1
+        if confidence >= 0.55 and class_id in [0]:  # III-id: 0, II-id: 1
             # Get the bounding box coordinates
             x1, y1, x2, y2 = result.xyxy[0].tolist()
             bbox = [int(x1), int(y1), int(x2), int(y2)]
@@ -47,7 +48,7 @@ def detect_id_card(frame):
 #             break
 #
 #         # Run detection on the frame
-#         id_card_detected, bbox, id_card_type,confidence = detect_id_card(frame)
+#         id_card_detected, bbox, id_card_type ,confidence= detect_id_card(frame)
 #
 #         if id_card_detected:
 #             x1, y1, x2, y2 = bbox

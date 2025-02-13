@@ -26,7 +26,7 @@ recognizer = iresnet_inference(
 )
 
 # Load pre-saved face features
-feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "feature")
+feature_path = os.path.join(BASE_DIR, "datasets", "face_features", "glink360k_featuresALL")
 images_name_path = os.path.join(feature_path, "images_name.npy")
 images_emb_path = os.path.join(feature_path, "images_emb.npy")
 images_names = np.load(images_name_path)
@@ -57,105 +57,76 @@ def recognize_face(face_image):
     return score[0], name
 
 
+def align_face(face_image):
+    """Center crop and resize face for better alignment"""
+    h, w = face_image.shape[:2]
+    size = min(h, w)
+    y_start = (h - size) // 2
+    x_start = (w - size) // 2
+    aligned = face_image[y_start:y_start + size, x_start:x_start + size]
+    return cv2.resize(aligned, (112, 112))
+
+
+def enhance_face_quality(face_image):
+    """Improve face image quality using CLAHE and denoising"""
+    lab = cv2.cvtColor(face_image, cv2.COLOR_BGR2LAB)
+    l_channel, a_channel, b_channel = cv2.split(lab)
+
+    # Contrast Limited Adaptive Histogram Equalization
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    l_enhanced = clahe.apply(l_channel)
+
+    # Edge-preserving denoising
+    denoised = cv2.bilateralFilter(l_enhanced, 9, 75, 75)
+
+    merged = cv2.merge([denoised, a_channel, b_channel])
+    return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
+
+
 def process_faces(frame):
+    """Enhanced face processing with quality improvements and positional scoring"""
     face_results = yolo_model.predict(frame, conf=0.7)
-    best_label = None  # Store the best match
-    best_bbox = None
+    best_label = "UNKNOWN"
+    best_bbox = []
     best_score = 0.0
+    frame_center = (frame.shape[1] // 2, frame.shape[0] // 2)
 
     for result in face_results:
         for bbox in result.boxes.xyxy:
             x1, y1, x2, y2 = map(int, bbox[:4])
-            cropped_face = frame[y1:y2, x1:x2]
 
-            try:
-                score, name = recognize_face(cropped_face)
-
-                if score >= 0.5 and score > best_score:
-                    best_label = name
-                    best_bbox = (x1, y1, x2, y2)
-                    best_score = score
-
-            except Exception as e:
-                print(f"Error recognizing face: {e}")
+            # Skip small detections (min 100x100 pixels)
+            if (x2 - x1) < 100 or (y2 - y1) < 100:
                 continue
 
-    # Return the best match or "UNKNOWN" if no face was detected confidently
-    if best_label:
-        return best_label, [best_bbox]
-    else:
-        return "UNKNOWN", []
-# def align_face(face_image):
-#     """Simple face alignment using center crop"""
-#     h, w = face_image.shape[:2]
-#     size = min(h, w)
-#     y_start = (h - size) // 2
-#     x_start = (w - size) // 2
-#     aligned = face_image[y_start:y_start + size, x_start:x_start + size]
-#     return cv2.resize(aligned, (112, 112))
-#
-#
-# def enhance_face_quality(face_image):
-#     """Improve face image quality for better recognition"""
-#     lab = cv2.cvtColor(face_image, cv2.COLOR_BGR2LAB)
-#     l_channel, a_channel, b_channel = cv2.split(lab)
-#
-#     # CLAHE for illumination normalization
-#     clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-#     l_enhanced = clahe.apply(l_channel)
-#
-#     # Edge-preserving denoising
-#     denoised = cv2.bilateralFilter(l_enhanced, 9, 75, 75)
-#
-#     merged = cv2.merge([denoised, a_channel, b_channel])
-#     return cv2.cvtColor(merged, cv2.COLOR_LAB2BGR)
-#
-# def process_faces(frame):
-#     """Process faces with enhanced alignment, preprocessing, and scoring"""
-#     face_results = yolo_model.predict(frame, conf=0.7)
-#     best_label = "UNKNOWN"
-#     best_bbox = []
-#     best_score = 0.0
-#     frame_center = (frame.shape[1] // 2, frame.shape[0] // 2)
-#
-#     for result in face_results:
-#         for bbox in result.boxes.xyxy:
-#             x1, y1, x2, y2 = map(int, bbox[:4])
-#
-#             # Skip small faces (minimum 100x100 pixels)
-#             if (x2 - x1) < 100 or (y2 - y1) < 100:
-#                 continue
-#
-#             try:
-#                 cropped_face = frame[y1:y2, x1:x2]
-#
-#                 # Enhanced preprocessing
-#                 aligned_face = align_face(cropped_face)
-#                 enhanced_face = enhance_face_quality(aligned_face)
-#
-#                 # Get recognition score with debug
-#                 raw_score, name = recognize_face(enhanced_face)
-#                 print(f"Raw recognition score: {raw_score:.4f}")  # Debug output
-#
-#                 # Calculate position score
-#                 face_center = ((x1 + x2) // 2, (y1 + y2) // 2)
-#                 distance = np.sqrt((face_center[0] - frame_center[0]) ** 2 +
-#                                    (face_center[1] - frame_center[1]) ** 2)
-#                 position_score = 1 / (1 + distance / 100)
-#
-#                 # Combined scoring
-#                 composite_score = raw_score * 0.8 + position_score * 0.2
-#
-#                 # Adaptive threshold (lower for centered faces)
-#                 dynamic_threshold = 0.52 if distance < 50 else 0.58
-#
-#                 if composite_score > best_score and composite_score >= dynamic_threshold:
-#                     best_label = name
-#                     best_bbox = [x1, y1, x2, y2]
-#                     best_score = composite_score
-#
-#             except Exception as e:
-#                 print(f"Face processing error: {e}")
-#                 continue
-#
-#     return best_label, [best_bbox] if best_label != "UNKNOWN" else []
+            try:
+                # Extract and preprocess face
+                cropped_face = frame[y1:y2, x1:x2]
+                aligned_face = align_face(cropped_face)
+                enhanced_face = enhance_face_quality(aligned_face)
+
+                # Get recognition score
+                raw_score, name = recognize_face(enhanced_face)
+
+                # Calculate position-based score
+                face_center = ((x1 + x2) // 2, (y1 + y2) // 2)
+                distance = np.sqrt((face_center[0] - frame_center[0]) ** 2 +
+                                   (face_center[1] - frame_center[1]) ** 2)
+                position_score = 1 / (1 + distance / 100)  # Normalized position score
+
+                # Combine scores with weighted average
+                composite_score = raw_score * 0.7 + position_score * 0.3
+
+                # Adaptive threshold based on face position
+                dynamic_threshold = 0.50 if distance < 150 else 0.60
+
+                if composite_score > best_score and composite_score >= dynamic_threshold:
+                    best_label = name
+                    best_bbox = [x1, y1, x2, y2]
+                    best_score = composite_score
+
+            except Exception as e:
+                print(f"Face processing error: {e}")
+                continue
+
+    return (best_label, best_score, [best_bbox])

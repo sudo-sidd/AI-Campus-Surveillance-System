@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from Person_detection.Person_detection_test import track_persons
-from Face_recognition.face_recognize_yolo_test import process_faces
+from Face_recognition.face_recognize_lcnn import process_faces
 from ID_detection.yolov11.ID_Detection_test import detect_id_card
 
 # Dictionary to store face recognition history for each track ID
@@ -86,8 +86,8 @@ def update_recognition_memory(track_id, new_name, new_score):
 
     return memory["name"]
 
-
-cap = cv2.VideoCapture(0)  # Change to RTSP stream URL if needed
+#rtsp://aiml:Siet@2727@192.168.3.183:554/Streaming/Channels/101
+cap = cv2.VideoCapture("rtsp://aiml:Siet@2727@192.168.3.183:554/Streaming/Channels/101")
 
 if not cap.isOpened():
     print(f"Failed to open camera")
@@ -114,8 +114,6 @@ while True:
                 # frame = person_results["modified_frame"]
                 person_boxes = person_results["person_boxes"]
                 track_ids = person_results["track_ids"]
-
-
                 people_data = []
 
                 for person_box, track_id in zip(np.array(person_boxes).tolist(), track_ids):
@@ -172,7 +170,10 @@ while True:
 
                     except Exception as e:
                         print(f"ID card detection error: {e}")
-                    people_data.append(person)
+
+                    if person['face_detected'] == True:
+                        people_data.append(person)
+
                 name_scores = {}
                 for person in people_data:
                     name = person['face_flag']
@@ -191,7 +192,7 @@ while True:
                                     (person['face_score'] == max_info['score'] and person['track_id'] != max_info[
                                         'track_id']):
                                 person['face_flag'] = "UNKNOWN"
-                                person['face_box'] = [0, 0, 0, 0]
+                                person['face_box'] = None
 
 
                 # Draw bounding boxes and annotations
@@ -202,8 +203,8 @@ while True:
             except Exception as e:
                 print(f"Error during frame processing: {e}")
 
-            # Show the frame
-            cv2.imshow('frame', frame)
+            img = cv2.resize(frame, (640*2, 480*2))
+            cv2.imshow('frame', img)
 
     # Exit with 'q' key
     if cv2.waitKey(1) & 0xFF == ord('q'):

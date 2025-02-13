@@ -9,7 +9,7 @@ from torchvision import transforms
 from ultralytics import YOLO
 from face_recognition.arcface.model import iresnet_inference
 from face_recognition.arcface.utils import read_features
-from torchvision.transforms import RandomHorizontalFlip, RandomRotation, ColorJitter
+from torchvision.transforms import RandomHorizontalFlip, RandomRotation
 
 # Check if CUDA is available and set the device accordingly
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -27,7 +27,6 @@ recognizer = iresnet_inference(
 data_augmentation = transforms.Compose([
     RandomHorizontalFlip(p=0.5),
     RandomRotation(degrees=15),
-    ColorJitter(brightness=0.1, contrast=0.1, saturation=0.1, hue=0.1)
 ])
 
 
@@ -90,11 +89,12 @@ def process_person_images(person_image_path, name_person, faces_save_dir, images
                     face_image_pil = Image.fromarray(face_image)
 
                     # Apply data augmentation
-                    augmented_face_image = data_augmentation(face_image_pil)
+                    # augmented_face_image = data_augmentation(face_image_pil)
 
                     # Save the original and augmented images
-                    for img in [face_image, np.array(augmented_face_image)]:
+                    for img in [face_image, np.array(face_image_pil)]:
                         path_save_face = os.path.join(person_face_path, f"{len(os.listdir(person_face_path))}.jpg")
+                        img = cv2.resize(img, (128, 128))
                         cv2.imwrite(path_save_face, img)
                         images_emb.append(get_feature(face_image=img))
                         images_name.append(name_person)
