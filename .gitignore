@@ -16,3 +16,17 @@ requirements2.txt
 FaceRecognizer
 V1/save.py
 V2/Detection/.env
+face-rec
+/V2/Backend/Face_recognition/datasets/backup/
+/V1/Face_recognition/datasets/
+/V1/images/
+/V2/Backend/Face_recognition/datasets/
+/V2/Backend/Face_recognition/raw_frames/
+/V2/Backend/Face_recognition/face_recognition/LightCNN/model/
+/V2/Backend/Face_recognition/face_recognition/arcface/weights/
+V2/Backend/Face_recognition/face_recognition/__pycache__
+V2/Backend/Face_recognition/face_recognition/LightCNN/__pycache__
+V2/Backend/ID_detection/yolov11/__pycache__
+V2/Detection/Detection/__pycache__
+V2/Detection/web/__pycache__
+V2/Detection/web/migrations/__pycache__
