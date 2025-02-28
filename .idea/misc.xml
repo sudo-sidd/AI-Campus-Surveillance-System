@@ -3,5 +3,5 @@
   <component name="Black">
     <option name="sdkName" value="Python 3.13 (ID_card_detection_wth-YoloV5)" />
   </component>
-  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 virtualenv at /mnt/nvme0n1p4/Project Environments/face-rec_id-rec/.venv" project-jdk-type="Python SDK" />
+  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.12 virtualenv at /mnt/data/PROJECTS/Face_rec-ID_detection/face-rec" project-jdk-type="Python SDK" />
 </project>

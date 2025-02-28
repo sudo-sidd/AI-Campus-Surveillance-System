@@ -11,10 +11,10 @@ from bson.objectid import ObjectId
 from datetime import datetime
 from pathlib import Path
 from Detection.Detection.settings import STATIC_ROOT
-from Person_detection.Person_detection import track_persons
-from Face_recognition.face_recognize_yolo import process_faces
-from ID_detection.yolov11.ID_Detection import detect_id_card
-from SaveData.SaveData import DataManager
+from Backend.Person_detection.Person_detection import track_persons
+from Backend.Face_recognition.face_recognize_lcnn import process_faces
+from Backend.ID_detection.yolov11.ID_Detection import detect_id_card
+from Backend.SaveData.SaveData import DataManager
 
 
 IMAGE_FOLDER_PATH = os.path.join(STATIC_ROOT, 'images')
