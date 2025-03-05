@@ -11,7 +11,7 @@ window.onload = function () {
             IP = env.IP;
         })
         .catch(error => console.error('Error Fetching environment variable:',error));
-
+    console.log(IP)
     // Fetch camera data from the backend
     fetch('/api/cameras/')  // Assuming your Django endpoint to serve the camera data
         .then(response => response.json())
