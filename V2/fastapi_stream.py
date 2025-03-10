@@ -200,9 +200,9 @@ def process_frame(camera_index, camera_ip, camera_location):
                             except Exception as e:
                                 print(f"ID card detection error: {e}")
 
-                            # if person['face_detected'] or person['id_flag']:
-                            #     people_data.append(person)
-                            people_data.append(person)
+                            if person['face_detected'] or person['id_flag']:
+                                people_data.append(person)
+                            # people_data.append(person)
                             
                             if id_flag == False :
                                 image_name = f"{camera_index}-{camera_location}-{track_id}-{datetime.now()}.jpg"

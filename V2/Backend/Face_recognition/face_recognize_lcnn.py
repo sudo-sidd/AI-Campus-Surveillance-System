@@ -18,7 +18,7 @@ yolo_model = YOLO(os.path.join(BASE_DIR, "face_detection", "yolo", "weights", "y
 
 # Initialize LightCNN model
 class_names = ["sidd", "sai"]  # Load from file/database in production
-model_weights_path = os.path.join(BASE_DIR, "face_recognition", "LightCNN", "model", "lightcnn_face_recognizer.pth")
+model_weights_path = os.path.join(BASE_DIR, "face_recognition", "LightCNN", "model", "sidd_sai_fisrt.pth")
 recognizer = LightCNN_29Layers_v2(num_classes=len(class_names)).to(device)
 recognizer.load_state_dict(torch.load(model_weights_path, map_location=device))
 recognizer.eval()
