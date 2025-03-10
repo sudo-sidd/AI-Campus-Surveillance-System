@@ -36,7 +36,7 @@ collection = db[collection_name]
 
 
 # Load camera data from data.json
-DATA_FILE_PATH = Path('./Detection/data.json')
+DATA_FILE_PATH = './Detection/data.json'
 cached_data = None
 
 def load_data():
@@ -68,31 +68,28 @@ def draw_annotations(frame, person_data):
     """Draw bounding boxes and annotations on the frame."""
     try:
         for person in person_data:
+            # Draw person bounding box
             x1, y1, x2, y2 = person['bbox']
-            track_id = person['track_id']
-            face_flag = person['face_flag']
-            id_card = person['id_card']
-
-            # Draw the person's bounding box
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-            # Prepare the text message
-            text = f"ID: {track_id} | Face: {face_flag} | IDCard: {id_card}"
+            # Draw face bounding box if detected
+            if person['face_detected']:
+                fb_x1, fb_y1, fb_x2, fb_y2 = person['face_box']
+                cv2.rectangle(frame, (fb_x1, fb_y1), (fb_x2, fb_y2), (0, 0, 255), 2)
+
+            # Draw ID card box if detected
+            if person['id_flag']:
+                ib_x1, ib_y1, ib_x2, ib_y2 = person['id_box']
+                cv2.rectangle(frame, (ib_x1, ib_y1), (ib_x2, ib_y2), (255, 0, 0), 2)
+
+            # Prepare text annotations
+            text = f"ID: {person['track_id']} | Face: {person['face_flag']} | IDCard: {person['id_card']}"
             (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
 
-            # Add a white background for better text visibility
+            # Add background and text
             cv2.rectangle(frame, (x1, y1 - 20), (x1 + text_width, y1), (255, 255, 255), -1)
+            cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
-            # Write the text above the bounding box
-            cv2.putText(
-                frame,
-                text,
-                (x1, y1 - 5),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                (0, 0, 0),
-                1
-            )
     except Exception as e:
         print(f"Error in draw_annotations: {e}")
     return frame
@@ -165,6 +162,7 @@ def process_frame(camera_index, camera_ip, camera_location):
                                 'bbox': [x1, y1, x2, y2],
                                 'track_id': track_id,
                                 'face_flag': "UNKNOWN",
+                                'face_detected': False,  # Add this field
                                 'face_box': [0, 0, 0, 0],
                                 'id_flag': False,
                                 'id_card': 'none',
@@ -177,17 +175,19 @@ def process_frame(camera_index, camera_ip, camera_location):
 
                             try:
                                 person_flag, face_score, face_boxes = process_faces(person_image)
-                                fb_x1, fb_y1, fb_x2, fb_y2 = face_boxes[0]
-                                # Adjust coordinates to original frame
-                                fb_x1 += x1
-                                fb_y1 += y1
-                                fb_x2 += x1
-                                fb_y2 += y1
-                                person['face_box'] = [fb_x1, fb_y1, fb_x2, fb_y2]
-                                if face_boxes:
+                                if face_boxes and len(face_boxes) > 0:
+                                    fb_x1, fb_y1, fb_x2, fb_y2 = face_boxes[0]
+                                    # Adjust coordinates to original frame
+                                    fb_x1 += x1
+                                    fb_y1 += y1
+                                    fb_x2 += x1
+                                    fb_y2 += y1
+                                    person['face_box'] = [fb_x1, fb_y1, fb_x2, fb_y2]
                                     person['face_flag'] = person_flag
+                                    person['face_detected'] = True
                                 else:
                                     person['face_flag'] = "UNKNOWN"
+                                    person['face_detected'] = False
 
                             except Exception as e:
                                 print(f"Face recognition error: {e}")
@@ -200,9 +200,10 @@ def process_frame(camera_index, camera_ip, camera_location):
                             except Exception as e:
                                 print(f"ID card detection error: {e}")
 
-                            if person['face_detected'] == True:
-                                people_data.append(person)
-
+                            # if person['face_detected'] or person['id_flag']:
+                            #     people_data.append(person)
+                            people_data.append(person)
+                            
                             if id_flag == False :
                                 image_name = f"{camera_index}-{camera_location}-{track_id}-{datetime.now()}.jpg"
                                 doc_id = ObjectId()
