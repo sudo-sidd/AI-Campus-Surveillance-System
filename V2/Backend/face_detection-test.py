@@ -19,7 +19,6 @@ def draw_annotations(frame, person_data):
 
         # Draw person bounding box
         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
         # Draw face bounding box if detected
         if person['face_detected']:
             fx1, fy1, fx2, fy2 = person['face_bbox']

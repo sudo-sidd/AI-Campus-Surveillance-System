@@ -126,6 +126,7 @@ def process_frame(camera_index, camera_ip, camera_location):
         while True:
             try:
                 ret, frame = cap.read()
+                annotated_frame = frame.copy()
                 if not ret:
                     print(f"Error capturing frame from camera {camera_index}")
                     cap.release()
@@ -233,7 +234,6 @@ def process_frame(camera_index, camera_ip, camera_location):
                             continue
 
                     # Draw annotations on a copy of the frame
-                    annotated_frame = frame.copy()
                     annotated_frame = draw_annotations(annotated_frame, people_data)
 
 
