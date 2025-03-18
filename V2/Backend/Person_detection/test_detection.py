@@ -3,8 +3,8 @@ import time
 from Person_detection import track_persons
 
 def main():
-    # Initialize webcam
-    cap = cv2.VideoCapture(0)
+    
+    cap = cv2.VideoCapture("V2/Backend/cut_video.mp4")
     
     # Check if camera opened successfully
     if not cap.isOpened():
@@ -17,6 +17,7 @@ def main():
     # For FPS calculation
     prev_time = time.time()
     fps = 0
+    frame_count = 0
 
     while True:
         # Read frame from webcam
@@ -24,6 +25,10 @@ def main():
         if not ret:
             print("Error: Can't receive frame from webcam")
             break
+        
+        frame_count += 1
+        if frame_count%5 == 0:
+            continue
 
         # Process frame and calculate FPS
         current_time = time.time()
@@ -37,25 +42,19 @@ def main():
             print(f"Error processing frame: {e}")
             continue
         
-        # Draw annotations
         for bbox, track_id in zip(results["person_boxes"], results["track_ids"]):
             x1, y1, x2, y2 = [int(coord) for coord in bbox]
             
             # Draw bounding box
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
             
-            # Add text
-            text = f"ID: {track_id} (Facing Camera)"
-            cv2.putText(frame, text, (x1, y1-10), 
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+            
 
-        # Display information
         persons_count = len(results["person_boxes"])
-        cv2.putText(frame, f"Persons facing camera: {persons_count}", 
-                   (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
         cv2.putText(frame, f"FPS: {fps:.1f}", 
                    (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
 
+        frame = cv2.resize(frame,(640*2,480*2))
         # Show frame
         cv2.imshow('Person Detection Test', frame)
 
