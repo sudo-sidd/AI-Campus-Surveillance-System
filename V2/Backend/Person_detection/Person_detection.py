@@ -1,5 +1,5 @@
 # Distance filtering 
-#  
+ 
 # import cv2
 # from ultralytics import YOLO
 # import os
@@ -65,10 +65,11 @@
 #         "track_ids": filtered_track_ids,
 #     }
 
-#Distance filtering + pose estimation
+# #Distance filtering + pose estimation
 
 import cv2
 from ultralytics import YOLO
+import torch
 import os
 import mediapipe as mp
 import numpy as np
@@ -80,6 +81,7 @@ yolo_path = os.path.join(BASE_DIR, "model", "person_detection.pt")
 yolo = YOLO(yolo_path)
 mp_pose = mp.solutions.pose
 pose = mp_pose.Pose(
+    static_image_mode=True, 
     min_detection_confidence=0.5,
     min_tracking_confidence=0.5,
     model_complexity=0  # Using lightweight model for better performance
@@ -141,7 +143,8 @@ def track_persons(frame, run_pose_estimation=False):
     Returns:
         Dictionary with modified_frame, person_boxes, track_ids, and optionally pose_results
     """
-    results = yolo.track(frame, persist=True, classes=[0], agnostic_nms=True, conf=0.7, iou=0.45)    
+    with torch.no_grad():
+        results = yolo.track(frame, persist=True, classes=[0], agnostic_nms=True, conf=0.7, iou=0.45)    
     
     if not results[0].boxes:
         return {
@@ -165,9 +168,8 @@ def track_persons(frame, run_pose_estimation=False):
     height_ratios = []
     pose_results_list = [] if run_pose_estimation else None
     
-    MIN_HEIGHT_RATIO = 0.3  # Person must take up at least 30% of frame height to be "not too far"
+    MIN_HEIGHT_RATIO = 0.4  # Person must take up at least 30% of frame height to be "not too far"
     MAX_HEIGHT_RATIO = 0.8  # Person must take up at most 80% of frame height to be "not too close"
-    VISIBILITY_THRESHOLD = 0.9  # Minimum visibility for key facial landmarks
     
     for bbox, track_id in zip(person_bboxes, track_ids):
         center_x, center_y, width, height = bbox
@@ -186,7 +188,7 @@ def track_persons(frame, run_pose_estimation=False):
                 
                 if person_roi.size > 0:
                     roi_rgb = cv2.cvtColor(person_roi, cv2.COLOR_BGR2RGB)
-                    pose_result = pose.process(roi_rgb)
+                    pose_result = pose.process(roi_rgb) 
                     
                     if pose_result.pose_landmarks and is_person_facing_camera(pose_result.pose_landmarks):
                         landmarks = pose_result.pose_landmarks.landmark
@@ -197,11 +199,21 @@ def track_persons(frame, run_pose_estimation=False):
                         left_ear_conf = landmarks[mp_pose.PoseLandmark.LEFT_EAR].visibility
                         right_ear_conf = landmarks[mp_pose.PoseLandmark.RIGHT_EAR].visibility
                         
+                        left_eye_x = landmarks[mp_pose.PoseLandmark.LEFT_EYE].x
+                        right_eye_x = landmarks[mp_pose.PoseLandmark.RIGHT_EYE].x
+                        left_ear_z = landmarks[mp_pose.PoseLandmark.LEFT_EAR].z if hasattr(landmarks[mp_pose.PoseLandmark.LEFT_EAR], 'z') else 0
+                        right_ear_z = landmarks[mp_pose.PoseLandmark.RIGHT_EAR].z if hasattr(landmarks[mp_pose.PoseLandmark.RIGHT_EAR], 'z') else 0
+                        
+                        eye_distance = abs(left_eye_x - right_eye_x)
+                        ear_depth_diff = abs(left_ear_z - right_ear_z)
+                        
                         if (nose_conf > VISIBILITY_THRESHOLD and
                             left_eye_conf > VISIBILITY_THRESHOLD and
                             right_eye_conf > VISIBILITY_THRESHOLD and
                             left_ear_conf > VISIBILITY_THRESHOLD and
-                            right_ear_conf > VISIBILITY_THRESHOLD):
+                            right_ear_conf > VISIBILITY_THRESHOLD and
+                            eye_distance > MIN_EYE_DISTANCE and
+                            ear_depth_diff < MAX_EAR_DEPTH_DIFF):
                             
                             filtered_bboxes.append([x1, y1, x2, y2])
                             filtered_track_ids.append(track_id)
@@ -308,5 +320,6 @@ def draw_pose_landmarks(frame, pose_results):
 #         "person_boxes": person_bboxes_scaled,  # Scaled to match the original frame
 #         "track_ids": track_ids,
 #     }
+
 
 
