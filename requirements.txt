@@ -21,3 +21,5 @@ torch==2.5.1
 torchvision==0.20.1
 ultralytics==8.3.67
 uvicorn==0.34.0
+dotenv
+mediapipe
