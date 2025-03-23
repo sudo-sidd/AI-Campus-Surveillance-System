@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from Person_detection.Person_detection_test import track_persons
-from Face_recognition.face_recognize_yolo_test import process_faces
+from Face_recognition.face_recognize_lcnn import process_faces
 from ID_detection.yolov11.ID_Detection_test import detect_id_card
 
 # Dictionary to store face recognition history for each track ID
