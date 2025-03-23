@@ -8,21 +8,25 @@ from Backend.Person_detection.Person_detection import track_persons
 from Backend.Face_recognition.face_recognize_lcnn import process_faces
 from Backend.ID_detection.yolov11.ID_Detection import detect_id_card
 
-# Load camera data from data.json
+# Update path to correctly find the data.json file
 DATA_FILE_PATH = './Detection/data.json'
+FALLBACK_CONFIG = [{"camera_ip": 0, "camera_location": "webcam"}]
 
 def load_camera_data():
-    """Load camera configuration from JSON file"""
+    """Load camera configuration from JSON file with fallback option"""
     if os.path.exists(DATA_FILE_PATH):
         try:
             with open(DATA_FILE_PATH, 'r') as file:
-                return json.load(file)
+                data = json.load(file)
+                print(f"Successfully loaded camera config from {DATA_FILE_PATH}")
+                return data
         except json.JSONDecodeError:
-            print("Error: Failed to decode JSON from the file.")
-            return []
+            print(f"Error: Failed to decode JSON from {DATA_FILE_PATH}.")
     else:
-        print(f"Error: File {DATA_FILE_PATH} does not exist.")
-        return []
+        print(f"Warning: File {DATA_FILE_PATH} does not exist.")
+    
+    print("Using fallback camera configuration (webcam)")
+    return FALLBACK_CONFIG
 
 def draw_annotations(frame, person_data):
     """Draw bounding boxes and annotations on the frame."""
@@ -86,19 +90,9 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
             return
 
         frame_count = 0
-        process_every_n_frames = 10  # Process every 10th frame
-        start_time = datetime.now()
-        fps = 0
+        process_every_n_frames = 5  # Process every frame
 
         while True:
-            # Calculate FPS every 30 frames
-            if frame_count % 30 == 0:
-                current_time = datetime.now()
-                elapsed = (current_time - start_time).total_seconds()
-                if elapsed > 0:
-                    fps = 30 / elapsed
-                start_time = current_time
-            
             try:
                 ret, frame = cap.read()
                 if not ret:
@@ -111,21 +105,8 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
                 annotated_frame = frame.copy()
                 frame_count += 1
                 
-                # Add FPS info to the frame
-                cv2.putText(annotated_frame, f"Camera {camera_index}: {camera_location}", (10, 30), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 255), 2)
-                cv2.putText(annotated_frame, f"FPS: {fps:.1f}", (10, 60), 
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-
                 # Process every Nth frame
                 if frame_count % process_every_n_frames == 0:
-                    # Show processing indicator
-                    processing_frame = annotated_frame.copy()
-                    cv2.putText(processing_frame, "Processing...", (10, 90), 
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
-                    cv2.imshow(window_name, processing_frame)
-                    cv2.waitKey(1)  # Update display
-                    
                     # Person detection
                     person_results = track_persons(frame)
 
@@ -165,7 +146,7 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
 
                                 # Face recognition
                                 try:
-                                    person_flag, face_score, face_boxes = process_faces(person_image)
+                                    person_flag, face_score, face_boxes = process_faces(person_image, track_id=track_id)
                                     if face_boxes and len(face_boxes) > 0:
                                         fb_x1, fb_y1, fb_x2, fb_y2 = face_boxes[0]
                                         # Adjust coordinates to original frame
@@ -206,8 +187,8 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
                         # Draw annotations on the frame
                         annotated_frame = draw_annotations(annotated_frame, people_data)
 
-                # Display the annotated frame
-                cv2.imshow(window_name, annotated_frame)
+                    # Display the annotated frame
+                    cv2.imshow(window_name, annotated_frame)
                 
                 # Exit if 'q' is pressed
                 if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -230,8 +211,8 @@ def main():
     print(f"Loaded {len(camera_data)} camera configurations")
     
     if not camera_data:
-        print("No cameras found in configuration. Exiting.")
-        return
+        print("No cameras found in configuration. Using default webcam.")
+        camera_data = FALLBACK_CONFIG
 
     # Create a thread pool for processing multiple cameras
     with ThreadPoolExecutor(max_workers=len(camera_data)) as executor:
@@ -246,12 +227,14 @@ def main():
                 camera["camera_location"]
             ))
         
-        # Wait for any key to be pressed in any window to exit
         print("Press 'q' in any window to exit")
         
         # Wait for all threads to complete
         for future in futures:
-            future.result()  # This will block until completion
+            try:
+                future.result()  # This will block until completion
+            except Exception as e:
+                print(f"Thread error: {e}")
 
     cv2.destroyAllWindows()
     print("Test completed")
