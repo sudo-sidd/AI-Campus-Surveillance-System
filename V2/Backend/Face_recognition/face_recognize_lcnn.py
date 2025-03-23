@@ -7,7 +7,7 @@ from ultralytics import YOLO
 from .face_recognition.LightCNN.light_cnn import LightCNN_29Layers_v2
 from PIL import Image
 import time
-from collections import deque
+from collections import deque, Counter
 
 # Get the base directory of the current script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,8 +34,14 @@ face_transform = transforms.Compose([
 
 # Recognition history for temporal smoothing
 recognition_history = {}  # track_id -> deque of recent recognitions
-HISTORY_SIZE = 5  # Number of frames to consider for smoothing
+HISTORY_SIZE = 15  # Store more history frames
 CONSISTENCY_THRESHOLD = 0.6  # Minimum consistency required
+CONFIDENCE_THRESHOLD = 0.45  # Minimum confidence to consider
+UNKNOWN_THRESHOLD = 0.7  # Proportion of frames needed to declare UNKNOWN
+MIN_FRAMES_FOR_DECISION = 5  # Minimum frames before making a decision
+
+# Face recognition memory
+face_recognition_memory = {}
 
 def preprocess_face(face_image):
     """Preprocess face image for LightCNN"""
@@ -207,3 +213,58 @@ def process_faces(frame, track_id=None):
         print(debug_msg)
     
     return (best_label, best_score, [best_bbox])
+
+
+def update_recognition_memory(track_id, new_name, new_score):
+    """
+    Maintain recognition memory for each tracked person with majority voting system.
+    Returns the most consistent label based on recent history.
+    """
+    # Initialize if this is a new track_id
+    if track_id not in face_recognition_memory:
+        face_recognition_memory[track_id] = {
+            "history": deque(maxlen=HISTORY_SIZE),
+            "current_label": "UNKNOWN",
+            "frames_since_known": 0
+        }
+    
+    memory = face_recognition_memory[track_id]
+    
+    # Only add to history if confidence exceeds minimum threshold
+    if new_score >= CONFIDENCE_THRESHOLD or new_name != "UNKNOWN":
+        memory["history"].append((new_name, new_score))
+    
+    # If we have enough frames, make a decision based on majority voting
+    if len(memory["history"]) >= MIN_FRAMES_FOR_DECISION:
+        # Count occurrences of each name (excluding low confidence)
+        valid_entries = [(name, score) for name, score in memory["history"] 
+                         if score >= CONFIDENCE_THRESHOLD or name != "UNKNOWN"]
+        
+        if valid_entries:
+            # Get names with their counts
+            names = [entry[0] for entry in valid_entries]
+            name_counts = Counter(names)
+            
+            # Find the most common name
+            most_common_name, count = name_counts.most_common(1)[0]
+            
+            # Calculate the proportion of this name in the history
+            proportion = count / len(memory["history"])
+            
+            # If UNKNOWN appears too frequently, maintain UNKNOWN status
+            unknown_count = sum(1 for name, _ in memory["history"] if name == "UNKNOWN")
+            unknown_proportion = unknown_count / len(memory["history"])
+            
+            if unknown_proportion >= UNKNOWN_THRESHOLD:
+                memory["frames_since_known"] += 1
+                
+                # Only change to UNKNOWN after consecutive frames
+                if memory["frames_since_known"] > MIN_FRAMES_FOR_DECISION:
+                    memory["current_label"] = "UNKNOWN"
+            
+            # If we have a consistent non-UNKNOWN name, use it
+            elif most_common_name != "UNKNOWN" and proportion >= 0.5:
+                memory["current_label"] = most_common_name
+                memory["frames_since_known"] = 0
+        
+    return memory["current_label"]
