@@ -90,7 +90,7 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
             return
 
         frame_count = 0
-        process_every_n_frames = 5  # Process every frame
+        process_every_n_frames = 3 # Process every frame
 
         while True:
             try:

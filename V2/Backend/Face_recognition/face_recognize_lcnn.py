@@ -40,15 +40,25 @@ HISTORY_SIZE = 15  # Store more history frames
 CONSISTENCY_THRESHOLD = 0.6  # Minimum consistency required
 CONFIDENCE_THRESHOLD = 0.45  # Minimum confidence to consider
 UNKNOWN_THRESHOLD = 0.7  # Proportion of frames needed to declare UNKNOWN
-MIN_FRAMES_FOR_DECISION = 5  # Minimum frames before making a decision
+MIN_FRAMES_FOR_DECISION = 8 # Minimum frames before making a decision
 
 # Face recognition memory
 face_recognition_memory = {}
 
 def preprocess_face(face_image):
-    """Preprocess face image for LightCNN"""
-    face_pil = Image.fromarray(cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY))
-    return face_transform(face_pil).unsqueeze(0).to(device)
+    """Preprocess face image for LightCNN - improved grayscale handling"""
+    # Convert to grayscale with OpenCV (single conversion)
+    gray_face = cv2.cvtColor(face_image, cv2.COLOR_BGR2GRAY)
+    face_pil = Image.fromarray(gray_face)
+    
+    # Use transforms without redundant grayscale conversion
+    transform = transforms.Compose([
+        # No Grayscale here since already converted
+        transforms.Resize((128, 128)),
+        transforms.ToTensor(),
+    ])
+    
+    return transform(face_pil).unsqueeze(0).to(device)
 
 @torch.no_grad()
 def recognize_face(face_image):
