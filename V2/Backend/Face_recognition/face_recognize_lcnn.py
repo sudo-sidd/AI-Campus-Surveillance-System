@@ -112,7 +112,6 @@ def update_recognition_memory(track_id, new_name, new_score):
             # Get names with their counts
             names = [entry[0] for entry in valid_entries]
             name_counts = Counter(names)
-            
             # Find the most common name
             most_common_name, count = name_counts.most_common(1)[0]
             
@@ -179,10 +178,10 @@ def process_faces(frame, track_id=None):
                 aligned_face = align_face(cropped_face, landmarks, output_size=128)
                 
                 # 3. Enhance image quality
-                enhanced_face = enhance_image(aligned_face)
+                # enhanced_face = enhance_image(aligned_face)
                 
                 # 4. Get recognition confidence and label
-                confidence, name = recognize_face(enhanced_face)
+                confidence, name = recognize_face(aligned_face)
                 
                 # Use a flat confidence threshold
                 if confidence >= CONFIDENCE_THRESHOLD:
