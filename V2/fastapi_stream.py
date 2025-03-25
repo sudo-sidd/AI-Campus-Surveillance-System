@@ -4,7 +4,8 @@ import json
 import os
 import numpy as np
 import asyncio
-from fastapi import FastAPI, WebSocket
+from fastapi import FastAPI
+from fastapi.responses import StreamingResponse
 from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
 from bson.objectid import ObjectId
@@ -341,19 +342,60 @@ for index, camera in enumerate(camera_data):
     print(f"Starting camera {index}: {camera['camera_location']} ({camera['camera_ip']})")
     executor.submit(process_frame, index, camera["camera_ip"], camera["camera_location"])
 
-@app.websocket("/ws/video/{camera_id}/")
-async def video_feed(websocket: WebSocket, camera_id: int):
-    await websocket.accept()
+
+
+# Replace the WebSocket endpoint with a standard streaming endpoint
+@app.get("/video/{camera_id}")
+async def video_feed(camera_id: int):
+    return StreamingResponse(
+        generate_frames(camera_id),
+        media_type="multipart/x-mixed-replace;boundary=frame"
+    )
+
+def generate_frames(camera_id):
+    """Generator function that yields video frames for streaming."""
     try:
         while True:
             if camera_id in current_frames:
-                await websocket.send_text(f'{{"frame": "{current_frames[camera_id]}"}}')
-            await asyncio.sleep(0.1)
+                # Decode the base64 frame back to bytes
+                frame_bytes = base64.b64decode(current_frames[camera_id])
+                
+                # Yield the frame in MJPEG format
+                yield (b'--frame\r\n'
+                       b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+            
+            # Small delay to control frame rate
+            time.sleep(0.1)
     except Exception as e:
-        print(f"WebSocket error: {e}")
-    finally:
-        await websocket.close()
+        print(f"Error in generate_frames: {e}")
+
+# Add time import which is needed for the sleep function
+import time
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7000)
+
+
+
+
+
+
+# @app.websocket("/ws/video/{camera_id}/")
+# async def video_feed(websocket: WebSocket, camera_id: int):
+#     await websocket.accept()
+#     try:
+#         while True:
+#             if camera_id in current_frames:
+#                 await websocket.send_text(f'{{"frame": "{current_frames[camera_id]}"}}')
+#             await asyncio.sleep(0.1)
+#     except Exception as e:
+#         print(f"WebSocket error: {e}")
+#     finally:
+#         await websocket.close()
+
+# if __name__ == "__main__":
+#     import uvicorn
+#     uvicorn.run(app, host="0.0.0.0", port=7000)
+
+
