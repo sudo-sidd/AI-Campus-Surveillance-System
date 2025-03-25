@@ -72,15 +72,18 @@
         const cameraId = urlParams.get('camera');
         const cameraFeed = document.getElementById('cameraFeed');
         const loadingSpinner = document.getElementById('loadingSpinner');
-        
+
+
         let IP;
         fetch('/api/get_env/')
-        .then(response => response.json())
-        .then(env => {
-            IP = env.IP;
-        })
-        .catch(error => console.error('Error Fetching environment variable:',error));
+            .then(response => response.json())
+            .then(env => {
+                IP = env.IP;
+            })
+            .catch(error => console.error('Error Fetching environment variable:',error));
         console.log(IP)
+
+
         if (cameraId) {
             const socketUrl = `ws://${IP}:7000/ws/video/${cameraId}/`;
             const socket = new WebSocket(socketUrl);
