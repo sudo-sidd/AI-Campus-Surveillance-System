@@ -33,3 +33,8 @@ V2/Detection/web/migrations/__pycache__
 V2/Detection/__init__.py
 V2/Detection/.env
 V2/Detection/.env
+V2/Backend/SaveData/__pycache__/SaveData.cpython-312.pyc
+V2/Backend/SaveData/__pycache__/FaceEmbeddings.cpython-312.pyc
+V2/Backend/__pycache__/__init__.cpython-312.pyc
+V2/Backend/SaveData/__pycache__/__init__.cpython-312.pyc
+V2/face_embeddings.json
