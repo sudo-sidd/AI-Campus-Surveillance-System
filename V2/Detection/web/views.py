@@ -17,6 +17,7 @@ def get_env_values(request):
     env_vars = {
         "IP": IP,
     }
+    print(env_vars)
     return JsonResponse(env_vars, safe = False)
 
 def my_view(request):
