@@ -34,3 +34,9 @@ V2/Detection/__init__.py
 V2/Detection/.env
 V2/Detection/.env
 .env
+V2/Detection/web/static/images
+.gitignore
+V2/Backend/break2.mp4
+V2/Backend/cut_video.mp4
+V2/Backend/cut_crowd.mp4
+V2/Backend/break2_2.mp4
