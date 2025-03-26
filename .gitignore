@@ -33,3 +33,4 @@ V2/Detection/web/migrations/__pycache__
 V2/Detection/__init__.py
 V2/Detection/.env
 V2/Detection/.env
+.env
