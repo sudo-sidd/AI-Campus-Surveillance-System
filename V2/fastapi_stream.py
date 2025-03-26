@@ -3,7 +3,11 @@ import cv2
 import json
 import os
 import numpy as np
+<<<<<<< HEAD
 # import asyncio
+=======
+import asyncio
+>>>>>>> eea4384c451bb23e99ecd66bf826cffb6a69705f
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 from concurrent.futures import ThreadPoolExecutor
@@ -385,3 +389,6 @@ def generate_frames(camera_id):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=7000)
+
+
+
