@@ -30,10 +30,15 @@ def load_camera_data():
 
 def draw_annotations(frame, person_data):
     """Draw bounding boxes and annotations on the frame."""
+    
+    # Rest of your drawing code...
     try:
+        print(f"Drawing annotations for {len(person_data)} people")
         for person in person_data:
             # Draw person bounding box
             x1, y1, x2, y2 = person['bbox']
+            # Debug print
+            print(f"Person box: {x1},{y1},{x2},{y2}")
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
             # Draw face bounding box if detected
@@ -90,7 +95,7 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
             return
 
         frame_count = 0
-        process_every_n_frames = 3 # Process every frame
+        process_every_n_frames = 2 # Process every frame
 
         while True:
             try:

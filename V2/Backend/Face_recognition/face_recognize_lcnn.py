@@ -18,8 +18,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 # Initialize YOLO face detection model
-yolo_model = YOLO(os.path.join(BASE_DIR, "face_detection", "yolo", "weights", "yolo11n-face.pt"))
-
+yolo_model = YOLO(os.path.join(BASE_DIR, "face_detection", "yolo", "weights", "yolo11n-face.pt")).to(device)
 # Initialize LightCNN model
 class_names = ["sidd", "sai"]  # Load from file/database in production
 model_weights_path = os.path.join(BASE_DIR, "face_recognition", "LightCNN", "model", "sidd_sai_fisrt.pth")
