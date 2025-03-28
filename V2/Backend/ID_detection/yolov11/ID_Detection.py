@@ -3,14 +3,14 @@ import os
 
 # Set up paths and load YOLO model
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(BASE_DIR, "models", "person+id", "best.pt")
+model_path = os.path.join(BASE_DIR, "models", "best.pt")
 model = YOLO(model_path)
 
 # Define colors for bounding boxes
 color = (0, 255, 0)
 
 # Class names for the IDs
-class_names = {0: "III-id", 1: "II-id", 2: "Person"}  # Adjust according to your model's class names
+class_names = {0: "II-id" ,1: "III-id" }  # Adjust according to your model's class names
 
 # Function to detect ID cards
 def detect_id_card(frame):
