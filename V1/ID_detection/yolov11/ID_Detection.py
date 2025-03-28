@@ -1,9 +1,10 @@
 from ultralytics import YOLO
 import os
-
+import torch
 # Set up paths and load YOLO model
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-model_path = os.path.join(BASE_DIR, "models", "person+id", "best.pt")
+model_path = os.path.join(BASE_DIR, "models", "person+id", "best.pt").to(device)
 model = YOLO(model_path)
 
 # Define colors for bounding boxes

@@ -1,10 +1,3 @@
-# -*- coding: utf-8 -*-
-# @Author: Alfred Xiang Wu
-# @Date:   2022-02-09 14:45:31
-# @Breif: 
-# @Last Modified by:   Alfred Xiang Wu
-# @Last Modified time: 2022-02-09 14:48:34
-
 import math
 import torch
 import torch.nn as nn
