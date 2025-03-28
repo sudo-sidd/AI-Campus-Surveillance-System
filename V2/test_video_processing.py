@@ -10,7 +10,11 @@ from Backend.ID_detection.yolov11.ID_Detection import detect_id_card
 
 # Update path to correctly find the data.json file
 DATA_FILE_PATH = './Detection/data.json'
+<<<<<<< HEAD
 FALLBACK_CONFIG = [{"camera_ip": "http://192.168.3.148:554/Streaming/Channels/101", "camera_location": "webcam"}]
+=======
+FALLBACK_CONFIG = [{"camera_ip": "/mnt/data/PROJECTS/Face_rec-ID_detection/V2/Backend/cut_crowd.mp4", "camera_location": "webcam"}]
+>>>>>>> a062cf6 (fixes and updates for fastapi)
 
 def load_camera_data():
     """Load camera configuration from JSON file with fallback option"""
@@ -37,8 +41,6 @@ def draw_annotations(frame, person_data):
         for person in person_data:
             # Draw person bounding box
             x1, y1, x2, y2 = person['bbox']
-            # Debug print
-            print(f"Person box: {x1},{y1},{x2},{y2}")
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
             # Draw face bounding box if detected
@@ -163,7 +165,7 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
                                         person['face_flag'] = person_flag
                                         person['face_detected'] = True
                                 except Exception as e:
-                                    print(f"Face recognition error: {e}")
+                                    print(f"⁉️Face recognition error: {e}")
 
                                 # ID card detection
                                 try:

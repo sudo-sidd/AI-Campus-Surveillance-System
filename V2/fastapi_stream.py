@@ -46,6 +46,9 @@ client = MongoClient(mongo_uri)
 db = client[db_name]
 collection = db[collection_name]
 
+# # Print MongoDB connection info (redact sensitive info)
+# print(f"MongoDB client connected: {data_manager.db_client is not None}")
+# print(f"Using database: {data_manager.db.name}")
 
 # Load camera data from data.json
 DATA_FILE_PATH = './Detection/data.json'
@@ -206,6 +209,10 @@ def process_frame(camera_index, camera_ip, camera_location=""):
     try:
         cap = cv2.VideoCapture(camera_ip)
 
+        # Add before processing frames
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
         if not cap.isOpened():
             print(f"Failed to open camera {camera_index} at {camera_ip}")
             return
@@ -267,7 +274,9 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                     person_count = len(person_boxes)
                     process_every_n_frames = get_adaptive_skip_frames(person_count, motion_score)
 
-                    for person_box, track_id in zip(np.array(person_boxes).tolist(), track_ids):
+                    print(f"Detected {len(person_boxes)} persons in frame {frame_count}")
+
+                    for i, (person_box, track_id) in enumerate(zip(np.array(person_boxes).tolist(), track_ids)):
                         try:
                             x1, y1, x2, y2 = [int(coord) for coord in person_box]
 
@@ -334,6 +343,8 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                             except Exception as e:
                                 print(f"ID card detection error: {e}")
 
+                            print(f"Person {i}: face_detected={person['face_detected']}, face_flag={person['face_flag']}, id_flag={person['id_flag']}")
+
                             # Add person to the list if face detected or ID card detected
                             if person['face_detected'] or person['id_flag']:
                                 people_data.append(person)
@@ -342,10 +353,11 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                             # Store unknown faces or if no ID card
                             print("Person detect & id flag :",person['face_detected'] , person['id_flag'])
                             if person['face_detected'] or person['id_flag']:
+                                print(f"Checking DB storage conditions for frame {frame_count}")
                                 if id_flag == False:
                                     # Only save to database periodically to avoid flooding database
                                     # with duplicate entries
-                                    if frame_count % 20 == 0:  # Save every 20th time we process
+                                    if frame_count % 5 == 0:  # Save every Nth time we process
                                         image_name = f"{camera_index}-{camera_location}-{track_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.jpg"
                                         doc_id = ObjectId()
                                         document = {
