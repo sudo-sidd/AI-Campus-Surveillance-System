@@ -2,13 +2,14 @@
 window.onload = function () {
     const cameraGrid = document.getElementById('cameraGrid');
     let cameras = [];
-    let IP = '127.0.0.1';
+    // let IP = '127.0.0.1';
+    let IP = '192.168.8.86';
 
-    fetch('/api/get_env')
-    .then(response => response.json())
-    .then((env) => {
-        IP = env.IP;
-    })
+    // fetch('/api/get_env')
+    // .then(response => response.json())
+    // .then((env) => {
+    //     IP = env.IP;
+    // })
 
     fetch('/api/cameras/')
         .then(response => {

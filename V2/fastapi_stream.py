@@ -17,6 +17,7 @@ from Backend.ID_detection.yolov11.ID_Detection import detect_id_card
 from Backend.SaveData.SaveData import DataManager
 import time
 from fastapi.middleware.cors import CORSMiddleware
+import torch
 
 
 
@@ -76,57 +77,58 @@ current_frames = {}
 # ThreadPoolExecutor to handle concurrent frame processing
 executor = ThreadPoolExecutor(max_workers=4)
 
-# def draw_annotations(frame, person_data):
-#     """Draw bounding boxes and annotations on the frame."""
-#     try:
-#         for person in person_data:
-#             # Draw person bounding box
-#             x1, y1, x2, y2 = person['bbox']
-#             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+def draw_annotations(frame, person_data):
+    """Draw bounding boxes and annotations on the frame."""
+    try:
+        for person in person_data:
+            # Draw person bounding box
+            x1, y1, x2, y2 = person['bbox']
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-#             # Draw face bounding box if detected
-#             if person['face_detected']:
-#                 fb_x1, fb_y1, fb_x2, fb_y2 = person['face_box']
-#                 cv2.rectangle(frame, (fb_x1, fb_y1), (fb_x2, fb_y2), (0, 0, 255), 2)
+            # Draw face bounding box if detected
+            if person['face_detected']:
+                fb_x1, fb_y1, fb_x2, fb_y2 = person['face_box']
+                cv2.rectangle(frame, (fb_x1, fb_y1), (fb_x2, fb_y2), (0, 0, 255), 2)
 
-#             # Draw ID card box if detected
-#             if person['id_flag']:
-#                 ib_x1, ib_y1, ib_x2, ib_y2 = person['id_box']
-#                 cv2.rectangle(frame, (ib_x1, ib_y1), (ib_x2, ib_y2), (255, 0, 0), 2)
+            # Draw ID card box if detected
+            if person['id_flag']:
+                ib_x1, ib_y1, ib_x2, ib_y2 = person['id_box']
+                cv2.rectangle(frame, (ib_x1, ib_y1), (ib_x2, ib_y2), (255, 0, 0), 2)
 
-#             # Prepare text annotations
-#             # Add confidence percentage for better visibility
-#             confidence_text = f"{person['face_confidence']*100:.1f}%" if 'face_confidence' in person else ""
-#             text = f"ID: {person['track_id']} | Face: {person['face_flag']} {confidence_text} | IDCard: {person['id_card']}"
-#             (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+            # Prepare text annotations
+            # Add confidence percentage for better visibility
+            confidence_text = f"{person['face_confidence']*100:.1f}%" if 'face_confidence' in person else ""
+            text = f"ID: {person['track_id']} | Face: {person['face_flag']} {confidence_text} | IDCard: {person['id_card']}"
+            (text_width, text_height), _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
 
-#             # Add background and text
-#             cv2.rectangle(frame, (x1, y1 - 20), (x1 + text_width, y1), (255, 255, 255), -1)
-#             cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
+            # Add background and text
+            cv2.rectangle(frame, (x1, y1 - 20), (x1 + text_width, y1), (255, 255, 255), -1)
+            cv2.putText(frame, text, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 0), 1)
 
-#             # Add confidence bar visualization if confidence is available
-#             if 'face_confidence' in person and person['face_confidence'] > 0:
-#                 bar_length = 50
-#                 filled_length = int(bar_length * person['face_confidence'])
-#                 y_pos = y1 - 30
+            # Add confidence bar visualization if confidence is available
+            if 'face_confidence' in person and person['face_confidence'] > 0:
+                bar_length = 50
+                filled_length = int(bar_length * person['face_confidence'])
+                y_pos = y1 - 30
                 
-#                 # Draw empty bar
-#                 cv2.rectangle(frame, (x1, y_pos), (x1 + bar_length, y_pos + 5), (0, 0, 0), 1)
+                # Draw empty bar
+                cv2.rectangle(frame, (x1, y_pos), (x1 + bar_length, y_pos + 5), (0, 0, 0), 1)
                 
-#                 # Fill with color based on confidence
-#                 if person['face_confidence'] < 0.4:
-#                     color = (0, 0, 255)  # Red
-#                 elif person['face_confidence'] < 0.6:
-#                     color = (0, 165, 255)  # Orange
-#                 else:
-#                     color = (0, 255, 0)  # Green
+                # Fill with color based on confidence
+                if person['face_confidence'] < 0.4:
+                    color = (0, 0, 255)  # Red
+                elif person['face_confidence'] < 0.6:
+                    color = (0, 165, 255)  # Orange
+                else:
+                    color = (0, 255, 0)  # Green
                     
-#                 cv2.rectangle(frame, (x1, y_pos), (x1 + filled_length, y_pos + 5), color, -1)
+                cv2.rectangle(frame, (x1, y_pos), (x1 + filled_length, y_pos + 5), color, -1)
 
-#     except Exception as e:
-#         print(f"Error in draw_annotations: {e}")
-#     return frame
+    except Exception as e:
+        print(f"Error in draw_annotations: {e}")
+    return frame
 
+<<<<<<< HEAD
 def draw_annotations(frame, person_data):
     """Draw bounding boxes and annotations on the frame."""
     try:
@@ -157,12 +159,15 @@ def draw_annotations(frame, person_data):
         print(f"Error in draw_annotations: {e}")
     return frame
 
+=======
+>>>>>>> 43b92e29e69eb3e299f97a7f264304190a3020b5
 def preprocess_frame(frame):
     """Enhances contrast using CLAHE in LAB color space."""
     try:
         # Convert to LAB color space
         lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
         l_channel, a_channel, b_channel = cv2.split(lab)
+<<<<<<< HEAD
 
         # Apply CLAHE to L channel
         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
@@ -181,17 +186,19 @@ def preprocess_frame(frame):
 #         # Convert to LAB color space
 #         lab = cv2.cvtColor(frame, cv2.COLOR_BGR2LAB)
 #         l_channel, a_channel, b_channel = cv2.split(lab)
+=======
+>>>>>>> 43b92e29e69eb3e299f97a7f264304190a3020b5
 
-#         # Apply CLAHE to L channel
-#         clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-#         l_clahe = clahe.apply(l_channel)
+        # Apply CLAHE to L channel
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        l_clahe = clahe.apply(l_channel)
 
-#         # Merge channels and convert back to BGR
-#         merged_lab = cv2.merge((l_clahe, a_channel, b_channel))
-#         return cv2.cvtColor(merged_lab, cv2.COLOR_LAB2BGR)
-#     except Exception as e:
-#         print(f"Preprocessing error: {e}")
-#         return frame
+        # Merge channels and convert back to BGR
+        merged_lab = cv2.merge((l_clahe, a_channel, b_channel))
+        return cv2.cvtColor(merged_lab, cv2.COLOR_LAB2BGR)
+    except Exception as e:
+        print(f"Preprocessing error: {e}")
+        return frame
 
 def get_adaptive_skip_frames(person_count, motion_score=0):
     """Determine how many frames to skip based on scene complexity"""
@@ -200,7 +207,11 @@ def get_adaptive_skip_frames(person_count, motion_score=0):
         return 2  # Process every 2 frames when busy
     elif person_count > 1 or motion_score > 10:
         return 5  # Process every 5 frames when moderate activity
+<<<<<<< HEAD
     return 1  # Process every 8 frames when scene is simple
+=======
+    return 8  # Process every 8 frames when scene is simple
+>>>>>>> 43b92e29e69eb3e299f97a7f264304190a3020b5
 
 def process_frame(camera_index, camera_ip, camera_location=""):
     try:
@@ -275,12 +286,25 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                             frame_height, frame_width, _ = frame.shape
                             x1, y1, x2, y2 = max(0, x1), max(0, y1), min(frame_width, x2), min(frame_height, y2)
 
+<<<<<<< HEAD
                             # Crop the person image
                             person_image = frame[y1:y2, x1:x2]
                             if person_image.size == 0:
                                 print(f"Empty image for track_id: {track_id}")
                                 continue
 
+=======
+                            # Skip if box is too small
+                            if (x2 - x1) < 40 or (y2 - y1) < 80:
+                                continue
+
+                            # Crop the person image
+                            person_image = frame[y1:y2, x1:x2]
+                            if person_image.size == 0:
+                                print(f"Empty image for track_id: {track_id}")
+                                continue
+
+>>>>>>> 43b92e29e69eb3e299f97a7f264304190a3020b5
                             person = {
                                 'bbox': [x1, y1, x2, y2],
                                 'track_id': track_id,
@@ -340,7 +364,10 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                             
                             # Save information to MongoDB if needed
                             # Store unknown faces or if no ID card
+<<<<<<< HEAD
                             print("Person detect & id flag :",person['face_detected'] , person['id_flag'])
+=======
+>>>>>>> 43b92e29e69eb3e299f97a7f264304190a3020b5
                             if person['face_detected'] or person['id_flag']:
                                 if id_flag == False:
                                     # Only save to database periodically to avoid flooding database
@@ -378,6 +405,7 @@ def process_frame(camera_index, camera_ip, camera_location=""):
 
                     # Draw annotations on a copy of the frame
                     annotated_frame = draw_annotations(annotated_frame, people_data)
+<<<<<<< HEAD
 
                 # cv2.imshow("frame", annotated_frame)
             
@@ -385,8 +413,9 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                 # # Exit if 'q' is pressed
                 # if cv2.waitKey(1) & 0xFF == ord('q'):
                 #     break
+=======
+>>>>>>> 43b92e29e69eb3e299f97a7f264304190a3020b5
 
-                # Update current frame for websocket (use annotated frame or original depending on processing)
                 _, jpeg = cv2.imencode('.jpg', annotated_frame)
                 current_frames[camera_index] = jpeg # ⚠️ Don't modify this code
                 
