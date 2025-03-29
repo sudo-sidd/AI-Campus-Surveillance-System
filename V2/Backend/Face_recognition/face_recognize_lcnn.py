@@ -37,7 +37,7 @@ face_transform = transforms.Compose([
 recognition_history = {}  # track_id -> deque of recent recognitions
 HISTORY_SIZE = 15  # Store more history frames
 CONSISTENCY_THRESHOLD = 0.6  # Minimum consistency required
-CONFIDENCE_THRESHOLD = 0.45  # Minimum confidence to consider
+CONFIDENCE_THRESHOLD = 0.4 # Minimum confidence to consider
 UNKNOWN_THRESHOLD = 0.7  # Proportion of frames needed to declare UNKNOWN
 MIN_FRAMES_FOR_DECISION = 8 # Minimum frames before making a decision
 
@@ -135,27 +135,29 @@ def update_recognition_memory(track_id, new_name, new_score):
         
     return memory["current_label"]
 
-# Modify process_faces() to accept track_id parameter
 def process_faces(frame, track_id=None):
     """Enhanced face processing with improved alignment and temporal consistency"""
     face_results = yolo_model.predict(frame, conf=0.5)
     
-    best_label = "UNKNOWN"
-    best_bbox = []
-    best_score = 0.0
-    
-    all_faces = []  # Store all recognized faces for debugging
-    
-    # Process detected faces
+    # Create two separate lists:
+    all_faces = []        # For recognized faces (confidence >= threshold)
+    detected_faces = []   # For ALL detected faces regardless of recognition
+
     for result in face_results:
         for bbox in result.boxes.xyxy:
-            x1, y1, x2, y2 = map(int, bbox[:4])
-            
-            # More permissive size filter (60x60 instead of 100x100)
-            if (x2 - x1) < 60 or (y2 - y1) < 60:
-                continue
-                
             try:
+                x1, y1, x2, y2 = map(int, bbox[:4])
+                
+                # Add to detected faces list first - before any confidence checks
+                detected_faces.append({
+                    'bbox': [x1, y1, x2, y2],
+                    'area': (x2 - x1) * (y2 - y1)
+                })
+                
+                # More permissive size filter (60x60 instead of 100x100)
+                if (x2 - x1) < 60 or (y2 - y1) < 60:
+                    continue
+                
                 # Extract face with a small margin
                 margin_x = int((x2 - x1) * 0.1)
                 margin_y = int((y2 - y1) * 0.1)
@@ -182,7 +184,7 @@ def process_faces(frame, track_id=None):
                 # 4. Get recognition confidence and label
                 confidence, name = recognize_face(aligned_face)
                 
-                # Use a flat confidence threshold
+                # The confidence check for recognition (only affects recognized faces)
                 if confidence >= CONFIDENCE_THRESHOLD:
                     all_faces.append({
                         'bbox': [x1, y1, x2, y2],
@@ -190,21 +192,21 @@ def process_faces(frame, track_id=None):
                         'confidence': confidence,
                         'area': (x2 - x1) * (y2 - y1)
                     })
-            
             except Exception as e:
-                print(f"Face processing error: {e}")
+                print(f"Error processing face: {e}")
                 continue
     
-    # Sort faces by area (largest first) and then by confidence
-    all_faces.sort(key=lambda x: (x['area'], x['confidence']), reverse=True)
+    # At the end of the function, modify the return logic:
     
-    # If we have any recognized faces, take the most confident one
+    # If we have recognized faces, use those
     if all_faces:
+        # Sort by confidence/area and get the best one
+        all_faces.sort(key=lambda x: x['confidence'] * x['area'], reverse=True)
         face = all_faces[0]
-        raw_label = face['name']
-        raw_score = face['confidence']
+        raw_label = face['name']  # ← Added this line to define the variable
+        raw_score = face['confidence']  # ← Added this line to define the variable
         best_bbox = face['bbox']
-        
+
         # Apply temporal consistency if track_id is provided
         if track_id is not None:
             best_label = update_recognition_memory(track_id, raw_label, raw_score)
@@ -212,5 +214,18 @@ def process_faces(frame, track_id=None):
         else:
             best_label = raw_label
             best_score = raw_score
+    # Otherwise use the best detected face without recognition
+    elif detected_faces:
+        # Sort by area and get the largest one
+        detected_faces.sort(key=lambda x: x['area'], reverse=True)
+        best_bbox = detected_faces[0]['bbox']
+        best_label = "UNKNOWN"
+        best_score = 0.0
+    else:
+        # No faces at all
+        best_label = "UNKNOWN"
+        best_score = 0.0
+        best_bbox = []
+    
     
     return (best_label, best_score, [best_bbox])
