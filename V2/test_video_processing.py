@@ -10,11 +10,7 @@ from Backend.ID_detection.yolov11.ID_Detection import detect_id_card
 
 # Update path to correctly find the data.json file
 DATA_FILE_PATH = './Detection/data.json'
-<<<<<<< HEAD
-FALLBACK_CONFIG = [{"camera_ip": "http://192.168.3.148:554/Streaming/Channels/101", "camera_location": "webcam"}]
-=======
 FALLBACK_CONFIG = [{"camera_ip": "/mnt/data/PROJECTS/Face_rec-ID_detection/V2/Backend/cut_crowd.mp4", "camera_location": "webcam"}]
->>>>>>> a062cf6 (fixes and updates for fastapi)
 
 def load_camera_data():
     """Load camera configuration from JSON file with fallback option"""

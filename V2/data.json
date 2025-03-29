@@ -1,15 +1,10 @@
 [
     {
-<<<<<<< HEAD
-        "camera_ip": 0,
-        "camera_location": "webcam"
-=======
         "camera_ip":"/mnt/data/PROJECTS/Face_rec-ID_detection/V2/Backend/cut_video.mp4",
         "camera_location": "location 2"
     },
     {
         "camera_ip":"/mnt/data/PROJECTS/Face_rec-ID_detection/V2/Backend/break2_2.mp4",
         "camera_location": "location 3"
->>>>>>> a062cf6 (fixes and updates for fastapi)
     }
 ]
