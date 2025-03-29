@@ -336,7 +336,7 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                                                 "id_detected": person['id_detected'],
                                                 'bbox': person['bbox'],
                                                 'track_id': person['track_id'],
-                                                'face_flag': person['face_flag'],
+                                                'face_detected': person['face_detected'],
                                                 'face_confidence': person['face_confidence'],
                                                 'face_box': person['face_box'],
                                                 'id_card': person['id_card'],
