@@ -62,17 +62,18 @@ def detection_view(request):
         for document in data:
             document['_id'] = str(document['_id'])  # Convert ObjectId to string for JSON compatibility
             # role = document.get('role', '').lower()  # Ensure role field is processed in lowercase
-            # print(1,document)
+            print(1,document)
             document['face_flag'] = document['face_flag']
-            if document['face_flag'] == 'UNKNOWN':
+            if document['face_flag'] == 'UNKNOWN' or(document['face_flag'] == 'UNKNOWN' and not (document["id_detected"] == False)):
                 outsiders.append(document)
-            if (document["id_flag"] == False):  # Check ID card status
+            else:
+                # (document["id_detected"] == False):  # Check ID card status
                 non_id_holders.append(document)
 
         # Debugging (Optional)
         # print(data)
         # print(f"Outsiders: {outsiders}\n")
-        # print(f"Non-ID Holders: {non_id_holders}\n")
+        print(f"Non-ID Holders: {non_id_holders}\n")
         
     except Exception as e:
         # Handle any database-related errors gracefully

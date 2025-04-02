@@ -63,7 +63,7 @@
                     <tr>
                         <th>S.No</th>
                         <th>Image</th>
-                        <th>ID Card</th>
+                        <th>ID card status</th>
                         <th>Time</th>
                         <th>Location</th>
                     </tr>
@@ -79,7 +79,15 @@
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 80px; height: 80px; object-fit: cover;">
                             {% endif %}
                         </td>
-                        <td>{{ outsider.id_flag }}</td>
+                        {% if outsider.id_detected %}
+                        <td style="color:green">
+                            Wearing
+                        </td>
+                        {% else %}
+                        <td style="color: red;">
+                            Not wearing
+                        </td>
+                        {% endif %}
                         <td>{{ outsider.timestamp }}</td>
                         <td>{{ outsider.camera_location }}</td>
                     </tr>
@@ -95,7 +103,6 @@
                     <tr>
                         <th>S.No</th>
                         <th>Image</th>
-                        <th>ID Card</th>
                         <th>Time</th>
                         <th>Role</th>
                         <th>Location</th>
@@ -112,7 +119,6 @@
                                 <img src="{% static 'default.jpg' %}" alt="Default Image" style="width: 80px; height: 80px; object-fit: cover;">
                             {% endif %}
                         </td>
-                        <td>{{ non_id_holder.id_flag }}</td>
                         <td>{{ non_id_holder.timestamp }}</td>
                         <td>{{ non_id_holder.face_flag }}</td>
                         <td>{{ non_id_holder.camera_location }}</td>
