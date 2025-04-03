@@ -14,7 +14,7 @@ class_names = {0: "II-id" ,1: "III-id" }  # Adjust according to your model's cla
 
 # Function to detect ID cards
 def detect_id_card(frame):
-    results = model(frame)
+    results = model(frame,imgsz=frame.shape[:2],conf=0.5)
     id_card_detected = False  # Boolean to indicate if an ID card is detected
     bbox = []  # Bounding box of the detected ID card
     id_card_type = ""  # Type of the detected ID card

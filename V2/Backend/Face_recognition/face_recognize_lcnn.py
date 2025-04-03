@@ -216,7 +216,7 @@ def process_faces(frame, track_id=None):
         frame_height, frame_width = frame.shape[:2]
         print(f"Processing frame {frame_width}x{frame_height} for track {track_id}")
             
-        face_results = yolo_model.predict(frame, conf=0.4)  # Lowered confidence threshold
+        face_results = yolo_model.predict(frame,imgsz=frame.shape[:2], conf=0.4)  # Lowered confidence threshold
         
         # Create a list of all detected faces
         detected_faces = []
@@ -239,7 +239,7 @@ def process_faces(frame, track_id=None):
                     print(f"Detected face at [{x1},{y1},{x2},{y2}], size: {x2-x1}x{y2-y1}")
                     
                     # Skip very small faces (reduced minimum size)
-                    if (x2 - x1) < 40 or (y2 - y1) < 40:
+                    if (x2 - x1) < 20 or (y2 - y1) < 20:
                         print(f"Skipping small face: {x2-x1}x{y2-y1}")
                         detected_faces.append(face_data)
                         continue

@@ -133,7 +133,6 @@ def preprocess_frame(frame):
     except Exception as e:
         print(f"Preprocessing error: {e}")
         return frame
-    
 # def get_adaptive_skip_frames(person_count, motion_score=0):
 #     """Determine how many frames to skip based on scene complexity"""
 #     # More people = process more frequently
@@ -142,14 +141,18 @@ def preprocess_frame(frame):
 #     elif person_count > 1 or motion_score > 10:
 #         return 5  # Process every 5 frames when moderate activity
 #     return 1  # Process every 8 frames when scene is simple
-
 def process_frame(camera_index, camera_ip, camera_location=""):
     try:
         cap = cv2.VideoCapture(camera_ip)
 
-        # Add before processing frames
-        # cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        # cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        # Set capture properties to maximum resolution
+        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1920)
+        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1080)
+        
+        # Verify the actual capture size
+        actual_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
+        actual_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
+        print(f"Camera {camera_index} actual capture resolution: {actual_width}x{actual_height}")
 
         if not cap.isOpened():
             print(f"Failed to open camera {camera_index} at {camera_ip}")
@@ -157,21 +160,11 @@ def process_frame(camera_index, camera_ip, camera_location=""):
 
         frame_count = 0
         process_every_n_frames = 5  # Start with a moderate processing rate
-        # prev_frame = None
         last_frame_time = datetime.now()
 
         while True:
             try:
-                # # Calculate fps occasionally
-                # if frame_count % 30 == 0:
-                #     now = datetime.now()
-                #     elapsed = (now - last_frame_time).total_seconds()
-                #     if elapsed > 0:
-                #         fps = 30 / elapsed
-                #         print(f"Camera {camera_index}: {fps:.1f} FPS | Processing every {process_every_n_frames} frames")
-                #     last_frame_time = now
-                
-                ret, frame = cap.read()
+                ret, original_frame = cap.read()  # Renamed to be explicit
                 if not ret:
                     print(f"Error capturing frame from camera {camera_index}")
                     cap.release()
@@ -179,52 +172,36 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                     continue
 
                 frame_count += 1
-                annotated_frame = frame.copy()
+                # Create a copy for annotations only
+                annotated_frame = original_frame.copy()
                 
-                # # Calculate frame motion if we have a previous frame
-                # motion_score = 0
-                # if prev_frame is not None:
-                #     frame_diff = cv2.absdiff(
-                #         cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY),
-                #         cv2.cvtColor(prev_frame, cv2.COLOR_BGR2GRAY)
-                #     )
-                #     motion_score = np.mean(frame_diff)
-
                 # Process every Nth frame
                 if frame_count % process_every_n_frames == 0:
-                    # # Store this frame for motion detection
-                    # prev_frame = frame.copy()
-                    
-                    # Person detection
-                    person_results = track_persons(frame)
+                    # Person detection on original frame
+                    # The detection model will handle resize internally but return coordinates for original dimensions
+                    person_results = track_persons(original_frame)
 
                     if not person_results or "person_boxes" not in person_results or "track_ids" not in person_results:
                         # Send the unprocessed frame since no detections
-                        _, jpeg = cv2.imencode('.jpg', frame)
-                        current_frames[camera_index] = base64.b64encode(jpeg.tobytes()).decode('utf-8')
+                        _, jpeg = cv2.imencode('.jpg', original_frame)
+                        current_frames[camera_index] = jpeg
                         continue
 
                     person_boxes = person_results["person_boxes"]
                     track_ids = person_results["track_ids"]
                     people_data = []
-                    
-                    # Adjust processing rate based on number of people
-                    # person_count = len(person_boxes)
-                    # process_every_n_frames = get_adaptive_skip_frames(person_count, motion_score)
-
-                    # print(f"Detected {len(person_boxes)} persons in frame {frame_count}")
 
                     for i, (person_box, track_id) in enumerate(zip(np.array(person_boxes).tolist(), track_ids)):
                         try:
                             x1, y1, x2, y2 = [int(coord) for coord in person_box]
 
-                            # Validate and clip bounding boxes
-                            frame_height, frame_width, _ = frame.shape
+                            # Validate and clip bounding boxes against the original frame
+                            frame_height, frame_width, _ = original_frame.shape
                             x1, y1, x2, y2 = max(0, x1), max(0, y1), min(frame_width, x2), min(frame_height, y2)
 
-                            # Crop the person image
-                            person_image = frame[y1:y2, x1:x2]
-                            if person_image.size == 0:
+                            # Crop the person from the original high-resolution frame
+                            high_res_person_image = original_frame[y1:y2, x1:x2]
+                            if high_res_person_image.size == 0:
                                 print(f"Empty image for track_id: {track_id}")
                                 continue
 
@@ -232,7 +209,7 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                                 'bbox': [x1, y1, x2, y2],
                                 'track_id': track_id,
                                 'face_flag': "UNKNOWN",
-                                'face_detected': None,
+                                'face_detected': False,
                                 'face_box': [0, 0, 0, 0],
                                 'face_confidence': 0.0,
                                 'id_detected': False,
@@ -241,21 +218,18 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                                 'camera_location': camera_location,
                             }
                             
-                            # Apply preprocessing to improve recognition
-                            person_image = preprocess_frame(person_image)
+                            # Apply preprocessing while maintaining resolution
+                            enhanced_person_image = preprocess_frame(high_res_person_image)
 
                             # Face recognition - use track_id for temporal consistency
                             try:
-                                print(f"About to call process_faces for track_id {track_id}, image shape: {person_image.shape}")
-                                person_flag, face_score, face_boxes = process_faces(person_image, track_id=track_id)
+                                print(f"About to call process_faces for track_id {track_id}, image shape: {enhanced_person_image.shape}")
+                                person_flag, face_score, face_boxes = process_faces(enhanced_person_image, track_id=track_id)
                                 print(f"Face processing results: flag={person_flag}, score={face_score}, boxes={face_boxes}")
-                                
-                                # First set a default value in case nothing is detected
-                                person['face_detected'] = False
                                 
                                 if face_boxes and len(face_boxes) > 0 and len(face_boxes[0]) == 4:
                                     fb_x1, fb_y1, fb_x2, fb_y2 = face_boxes[0]
-                                    # Adjust coordinates to original frame
+                                    # Map face coordinates to original frame coordinates
                                     fb_x1 += x1
                                     fb_y1 += y1
                                     fb_x2 += x1
@@ -263,30 +237,26 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                                     person['face_box'] = [fb_x1, fb_y1, fb_x2, fb_y2]
                                     person['face_flag'] = person_flag
                                     person['face_confidence'] = face_score
-                                    
-                                    # Always set face_detected=True when boxes exist
                                     person['face_detected'] = True
-                                    
                                 else:
                                     person['face_flag'] = "UNKNOWN"
                                     person['face_detected'] = False
                                     print("No face boxes returned by process_faces")
                             except Exception as e:
-                                person['face_detected'] = False  # Ensure this is set in exception case
+                                person['face_detected'] = False
                                 print(f"Face recognition error: {e}")
-                                # Print more details about the error
                                 import traceback
                                 traceback.print_exc()
 
-                            # ID card detection
+                            # ID card detection on the high-resolution crop
                             try:
-                                id_detected, id_box, id_card = detect_id_card(person_image)
+                                id_detected, id_box, id_card = detect_id_card(enhanced_person_image)
                                 person['id_detected'] = id_detected
                                 person['id_card'] = id_card
                                 
                                 if id_detected and id_box:
                                     ib_x1, ib_y1, ib_x2, ib_y2 = id_box
-                                    # Adjust coordinates to original frame
+                                    # Map ID box coordinates to original frame coordinates
                                     ib_x1 += x1
                                     ib_y1 += y1
                                     ib_x2 += x1
@@ -298,12 +268,11 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                             print(f"Person {i}: face_detected={person['face_detected']}, face_flag={person['face_flag']}, id_detected={person['id_detected']}")
 
                             # Add person to the list if face detected or ID card detected
-                            if person['face_detected'] :    #or person['id_flag']
+                            if person['face_detected']:
                                 people_data.append(person)
                             
                             # Save information to MongoDB if needed
-                            # Store unknown faces or if no ID card
-                            print("Person detect & id flag :",person['face_detected'] , person['id_detected'])
+                            print("Person detect & id flag :", person['face_detected'], person['id_detected'])
                             if person['face_detected']:  # First ensure face is detected
                                 should_save = False
                                 save_method = None
@@ -322,10 +291,11 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                                 if should_save:
                                     try:
                                         if save_method == "data_manager":
-                                            saved_doc = data_manager.save_data(person_image, person)
+                                            # Save the high-resolution image
+                                            saved_doc = data_manager.save_data(enhanced_person_image, person)
                                             print(f"✅ Saved unknown face via DataManager: {saved_doc}")
                                         else:
-                                            # Use your existing direct MongoDB insert code
+                                            # Use your existing direct MongoDB insert code with high-res image
                                             image_name = f"{camera_index}-{camera_location}-{track_id}-{datetime.now().strftime('%Y%m%d-%H%M%S')}.jpg"
                                             doc_id = ObjectId()
                                             document = {
@@ -345,7 +315,7 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                                             }
                                             collection.insert_one(document)
                                             path = os.path.join(IMAGE_FOLDER_PATH, image_name)
-                                            cv2.imwrite(path, person_image)
+                                            cv2.imwrite(path, enhanced_person_image)
                                             print(f"✅ Saved no-ID person via direct MongoDB: {doc_id}")
                                     except Exception as e:
                                         print(f"❌ Error saving to DB: {str(e)}")
@@ -359,12 +329,11 @@ def process_frame(camera_index, camera_ip, camera_location=""):
 
                 cv2.imshow("frame", annotated_frame)
             
-
                 # Exit if 'q' is pressed
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
 
-                # Update current frame for websocket (use annotated frame or original depending on processing)
+                # Update current frame for websocket (use annotated frame)
                 _, jpeg = cv2.imencode('.jpg', annotated_frame)
                 current_frames[camera_index] = jpeg # ⚠️ Don't modify this code
                 
