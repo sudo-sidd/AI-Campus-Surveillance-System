@@ -10,7 +10,7 @@ from Backend.ID_detection.yolov11.ID_Detection import detect_id_card
 
 # Update path to correctly find the data.json file
 DATA_FILE_PATH = './Detection/data.json'
-FALLBACK_CONFIG = [{"camera_ip": "/mnt/data/PROJECTS/Face_rec-ID_detection/V2/test.mp4", "camera_location": "webcam"}]
+FALLBACK_CONFIG = [{"camera_ip": "/mnt/data/PROJECTS/Face_rec-ID_detection/vid/test.mp4", "camera_location": "webcam"}]
 
 def load_camera_data():
     """Load camera configuration from JSON file with fallback option"""
