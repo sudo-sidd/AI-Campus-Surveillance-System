@@ -143,21 +143,22 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
         
         while True:
             try:
-                ret, frame = cap.read()
+                ret, original_frame = cap.read()  # Renamed to be explicit
                 if not ret:
                     print(f"Error capturing frame from camera {camera_index}")
                     cap.release()
                     cap = cv2.VideoCapture(camera_ip)
                     continue
 
-                # Create a copy for annotations
-                annotated_frame = frame.copy()
+                # Create a copy for annotations only
+                annotated_frame = original_frame.copy()
                 frame_count += 1
                 
                 # Process every Nth frame
                 if frame_count % process_every_n_frames == 0:
-                    # Person detection
-                    person_results = track_persons(frame)
+                    # Person detection on original frame
+                    # The detection model will handle resize internally but return coordinates for original dimensions
+                    person_results = track_persons(original_frame)
 
                     if person_results and "person_boxes" in person_results and "track_ids" in person_results:
                         person_boxes = person_results["person_boxes"]
@@ -168,13 +169,13 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
                             try:
                                 x1, y1, x2, y2 = [int(coord) for coord in person_box]
 
-                                # Validate and clip bounding boxes
-                                frame_height, frame_width, _ = frame.shape
+                                # Validate and clip bounding boxes against the original frame
+                                frame_height, frame_width, _ = original_frame.shape
                                 x1, y1, x2, y2 = max(0, x1), max(0, y1), min(frame_width, x2), min(frame_height, y2)
 
-                                # Crop the person image
-                                person_image = frame[y1:y2, x1:x2]
-                                if person_image.size == 0:
+                                # Crop the person from the original high-resolution frame
+                                high_res_person_image = original_frame[y1:y2, x1:x2]
+                                if high_res_person_image.size == 0:
                                     print(f"Empty image for track_id: {track_id}")
                                     continue
 
@@ -190,15 +191,15 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
                                     'camera_location': camera_location,
                                 }
                                 
-                                # Apply preprocessing to improve recognition
-                                person_image = preprocess_frame(person_image)
+                                # Apply preprocessing while maintaining resolution
+                                enhanced_person_image = preprocess_frame(high_res_person_image)
 
-                                # Face recognition
+                                # Face recognition on the high-resolution crop
                                 try:
-                                    person_flag, face_score, face_boxes = process_faces(person_image, track_id=track_id)
+                                    person_flag, face_score, face_boxes = process_faces(enhanced_person_image, track_id=track_id)
                                     if face_boxes and len(face_boxes) > 0:
                                         fb_x1, fb_y1, fb_x2, fb_y2 = face_boxes[0]
-                                        # Adjust coordinates to original frame
+                                        # Map face coordinates to original frame coordinates
                                         fb_x1 += x1
                                         fb_y1 += y1
                                         fb_x2 += x1
@@ -207,17 +208,17 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
                                         person['face_flag'] = person_flag
                                         person['face_detected'] = True
                                 except Exception as e:
-                                    print(f"⁉️Face recognition error: {e}")
+                                    print(f"Face recognition error: {e}")
 
-                                # ID card detection
+                                # ID card detection on the high-resolution crop
                                 try:
-                                    id_flag, id_box, id_card = detect_id_card(person_image)
+                                    id_flag, id_box, id_card = detect_id_card(enhanced_person_image)
                                     person['id_flag'] = id_flag
                                     person['id_card'] = id_card
                                     
                                     if id_flag and id_box:
                                         ib_x1, ib_y1, ib_x2, ib_y2 = id_box
-                                        # Adjust coordinates to original frame
+                                        # Map ID box coordinates to original frame coordinates
                                         ib_x1 += x1
                                         ib_y1 += y1
                                         ib_x2 += x1
@@ -233,10 +234,10 @@ def process_camera_stream(camera_index, camera_ip, camera_location):
                                 print(f"Error processing person: {e}")
                                 continue
 
-                        # Draw annotations on the frame
+                        # Draw annotations on the copy of the original frame
                         annotated_frame = draw_annotations(annotated_frame, people_data)
 
-                    # Display the annotated frame
+                    # Display the annotated frame at original resolution
                     cv2.imshow(window_name, annotated_frame)
                 
                 # Exit if 'q' is pressed
