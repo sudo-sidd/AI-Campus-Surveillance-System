@@ -10,7 +10,7 @@ model = YOLO(model_path)
 color = (0, 255, 0)
 
 # Class names for the IDs
-class_names = {0: "II-id" ,1: "III-id" }  # Adjust according to your model's class names
+class_names = {0:"Id" }  # Adjust according to your model's class names
 
 # Function to detect ID cards
 def detect_id_card(frame):

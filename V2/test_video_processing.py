@@ -48,7 +48,7 @@ def detect_id_card(person_image):
 
 # Update path to correctly find the data.json file
 DATA_FILE_PATH = './Detection/data.json'
-FALLBACK_CONFIG = [{"camera_ip": "/mnt/data/PROJECTS/Face_rec-ID_detection/vid/test.mp4", "camera_location": "webcam"}]
+FALLBACK_CONFIG = [{"camera_ip": "/mnt/data/PROJECTS/Face_rec-ID_detection/vid/new_test2.mp4", "camera_location": "webcam"}]
 
 def load_camera_data():
     """Load camera configuration from JSON file with fallback option"""
