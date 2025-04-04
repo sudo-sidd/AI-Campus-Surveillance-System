@@ -50,5 +50,5 @@ V2/Backend/Face_recognition/ID_detection/__pycache__
 V2/Backend/ID_detection/yolov11/__pycache__
 V2/Backend/Person_detection/__pycache__
 V2/Backend/SaveData/__pycache__
-vid/
+/vid/
 V2/Backend/Person_detection/__pycache__/
