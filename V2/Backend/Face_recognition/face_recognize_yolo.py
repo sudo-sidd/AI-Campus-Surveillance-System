@@ -4,8 +4,8 @@ import torch
 import os
 from torchvision import transforms
 from ultralytics import YOLO
-from face_recognition.arcface.model import iresnet_inference
-from face_recognition.arcface.utils import compare_encodings
+from .face_recognition.arcface.model import iresnet_inference
+from .face_recognition.arcface.utils import compare_encodings
 
 # Get the base directory of the current script
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))

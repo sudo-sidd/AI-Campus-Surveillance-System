@@ -10,11 +10,11 @@ model = YOLO(model_path)
 color = (0, 255, 0)
 
 # Class names for the IDs
-class_names = {0: "II-id" ,1: "III-id" }  # Adjust according to your model's class names
+class_names = {0:"Id" }  # Adjust according to your model's class names
 
 # Function to detect ID cards
 def detect_id_card(frame):
-    results = model(frame)
+    results = model(frame,imgsz=frame.shape[:2],conf=0.5)
     id_card_detected = False  # Boolean to indicate if an ID card is detected
     bbox = []  # Bounding box of the detected ID card
     id_card_type = ""  # Type of the detected ID card
@@ -32,4 +32,8 @@ def detect_id_card(frame):
             id_card_detected = True
             break  # Exit the loop as we only need one ID card
 
+<<<<<<< HEAD
     return id_card_detected, bbox, id_card_type
+=======
+    return id_card_detected, bbox, id_card_type
+>>>>>>> 89822a60b42f1660423116e3b62d0785d311c3fe
