@@ -327,8 +327,6 @@ def process_frame(camera_index, camera_ip, camera_location=""):
                     # Draw annotations on a copy of the frame
                     annotated_frame = draw_annotations(annotated_frame, people_data)
 
-                cv2.imshow("frame", annotated_frame)
-            
                 # Exit if 'q' is pressed
                 if cv2.waitKey(1) & 0xFF == ord('q'):
                     break
