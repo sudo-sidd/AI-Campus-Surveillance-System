@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camera Fullscreen</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body,
+      html {
+        height: 100%;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        background-color: black;
+        overflow: hidden;
+      }
+      .fullscreen-container {
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        position: relative;
+      }
+      #cameraFeed {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: none;
+      }
+      .exit-button {
+        position: absolute;
+        top: 20px;
+        left: 20px;
+        color: white;
+        background: rgba(0, 0, 0, 0.7);
+        padding: 12px 18px;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: background 0.3s ease;
+      }
+      .exit-button:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .loading {
+        position: absolute;
+        width: 50px;
+        height: 50px;
+        border: 4px solid rgba(255, 255, 255, 0.3);
+        border-top: 4px solid white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="fullscreen-container">
+      <button class="exit-button" onclick="window.history.back()">
+        &larr; Exit
+      </button>
+      <div class="loading" id="loadingSpinner"></div>
+      <img id="cameraFeed" src="" alt="Camera Feed" style="max-height: 100vh; max-width: 100vw; object-fit: contain;"/>
+    </div>
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const cameraId = urlParams.get("camera");
+      const cameraFeed = document.getElementById("cameraFeed");
+      const loadingSpinner = document.getElementById("loadingSpinner");
+
+    // Fetch the IP address from the server
+    fetch("/api/get_env/")
+      .then((response) => response.json())
+      .then((env) => {
+        const IP = env.IP || '127.0.0.1'; // Use env.IP if available, fall back to hardcoded IP
+        // const IP = '172.16.3.241';
+        console.log("Using IP:", IP);
+        
+        if (cameraId) {
+          // Define FastAPI endpoint for video stream
+          // Use IP address from environment
+          const cameraUrl = `http://${IP}:7000/video/${cameraId}`;
+          loadingSpinner.style.display = "none";
+          cameraFeed.style.display = "block";
+          cameraFeed.src = cameraUrl;
+          console.log(`Connecting to camera: ${cameraUrl}`);
+          
+          // Add error handling for camera feed
+          cameraFeed.onerror = function() {
+            console.error("Error loading camera feed");
+            loadingSpinner.style.display = "none";
+            // Display error message to user
+            const errorMsg = document.createElement('div');
+            errorMsg.textContent = "Camera feed unavailable";
+            errorMsg.style.color = "white";
+            errorMsg.style.position = "absolute";
+            document.querySelector('.fullscreen-container').appendChild(errorMsg);
+          };
+        }
+      })
+      .catch(error => {
+        console.error("Error fetching environment:", error);
+        loadingSpinner.style.display = "none";
+      });
+  </script>
+</body>
+</html>

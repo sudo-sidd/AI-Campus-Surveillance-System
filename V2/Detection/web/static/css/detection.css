@@ -1,0 +1,223 @@
+/* General table styling */
+.table-container {
+    margin-top: 20px;
+}
+
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+    width: 100%;
+    background: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0px 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.table th,
+.table td {
+    padding: 6px 7px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.table tr:hover {
+    background-color: #f1f1f1;
+}
+
+.table img {
+    margin-left: 30%;
+    width: 200px;
+    /* Increase from 80px to 100px */
+    height: 200px;
+    /* Increase from 80px to 100px */
+    object-fit: cover;
+    /* Ensure proper cropping */
+    border-radius: 8px;
+    /* Slightly rounded corners */
+    transition: transform 0.2s;
+}
+
+.table img:hover {
+    transform: scale(1.1);
+    cursor: pointer;
+}
+
+@media print {
+
+    /* Hide all buttons, icons, and interactive elements */
+    .buttons,
+    #settings-icon,
+    .sidebar,
+    .close-btn,
+    #topScrollButton {
+        display: none !important;
+    }
+
+    /* Reduce header height for better printing */
+    header {
+        padding: 5px 0;
+        /* Reduce padding */
+        border-bottom: 1px solid #000;
+        /* Keep a clear boundary */
+    }
+
+    header h1 {
+        font-size: 18px;
+        /* Reduce header title size */
+        margin-bottom: 5px;
+    }
+
+    header p {
+        font-size: 12px;
+        /* Reduce subtext size */
+        margin-bottom: 2px;
+    }
+
+    /* Ensure tables print nicely */
+    .table {
+        border: 1px solid #000;
+    }
+
+    .table th,
+    .table td {
+        border: 1px solid #000 !important;
+        padding: 8px !important;
+    }
+}
+
+
+/* Sidebar Styles */
+.sidebar {
+    height: 100%;
+    width: 0;
+    position: fixed;
+    z-index: 999;
+    top: 0;
+    right: 0;
+    background-color: rgba(44, 62, 80, 0.95);
+    /* Translucent dark blue background */
+    overflow-x: hidden;
+    transition: width 0.3s ease-in-out;
+    /* Smooth transition */
+    padding-top: 60px;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+    /* Subtle shadow */
+    border-left: 2px solid #34495e;
+    /* Left border for definition */
+    backdrop-filter: blur(8px);
+    /* Blur effect for modern look */
+}
+
+.sidebar a {
+    padding: 15px 20px;
+    /* Better spacing */
+    text-decoration: none;
+    font-size: 18px;
+    /* Smaller font size */
+    color: #bdc3c7;
+    /* Light gray text */
+    display: block;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    /* Smooth hover effect */
+    border-bottom: 1px solid rgba(52, 73, 94, 0.5);
+    /* Translucent separator between items */
+}
+
+.sidebar a:hover {
+    background-color: rgba(52, 73, 94, 0.7);
+    /* Translucent darker background on hover */
+    color: #ffffff;
+    /* White text on hover */
+}
+
+.sidebar .close-btn {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 30px;
+    /* Smaller close button */
+    color: #bdc3c7;
+    /* Light gray color */
+    cursor: pointer;
+    transition: color 0.3s ease;
+    /* Smooth hover effect */
+}
+
+.sidebar .close-btn:hover {
+    color: #ffffff;
+    /* White color on hover */
+}
+
+#settings-icon {
+    font-size: 30px;
+    cursor: pointer;
+    color: #2c3e50;
+    /* Matching sidebar color */
+    transition: color 0.3s ease;
+    /* Smooth hover effect */
+}
+
+#settings-icon:hover {
+    color: #34495e;
+    /* Darker color on hover */
+}
+
+.close-btn {
+    position: absolute;
+    right: 5px;
+    top: 5px;
+    color: #000000;
+    font-size: 28px;
+    font-weight: bold;
+    background-color: transparent;  /* Bootstrap danger color */
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    z-index: 1001;
+}
+
+.close-btn:hover {
+    transform: scale(1.1);
+}
+
+.modal-content {
+    position: relative;
+    padding: 20px;
+    border-radius: 8px;
+    max-width: 20%;
+    max-height: 50vh;
+    background-color: white;
+}
+
+#modalImage {
+    max-width: 80%;
+    max-height: 90vh;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+

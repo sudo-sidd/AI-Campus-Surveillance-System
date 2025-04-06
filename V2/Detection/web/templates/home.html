@@ -1,0 +1,199 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sri Shakthi Institute of Engineering and Technology</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+    
+    <!-- Sidebar CSS -->
+    <style>
+        /* Sidebar Styles */
+        .sidebar {
+            height: 100%;
+            width: 0;
+            position: fixed;
+            z-index: 999;
+            top: 0;
+            right: 0;
+            background-color: rgba(44, 62, 80, 0.95); /* Translucent dark blue background */
+            overflow-x: hidden;
+            transition: width 0.3s ease-in-out; /* Smooth transition */
+            padding-top: 60px;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            border-left: 2px solid #34495e; /* Left border for definition */
+            backdrop-filter: blur(8px); /* Blur effect for modern look */
+        }
+    
+        .sidebar a {
+            padding: 15px 20px; /* Better spacing */
+            text-decoration: none;
+            font-size: 18px; /* Smaller font size */
+            color: #bdc3c7; /* Light gray text */
+            display: block;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth hover effect */
+            border-bottom: 1px solid rgba(52, 73, 94, 0.5); /* Translucent separator between items */
+        }
+    
+        .sidebar a:hover {
+            background-color: rgba(52, 73, 94, 0.7); /* Translucent darker background on hover */
+            color: #ffffff; /* White text on hover */
+        }
+    
+        .sidebar .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 20px;
+            font-size: 30px; /* Smaller close button */
+            color: #bdc3c7; /* Light gray color */
+            cursor: pointer;
+            transition: color 0.3s ease; /* Smooth hover effect */
+        }
+    
+        .sidebar .close-btn:hover {
+            color: #ffffff; /* White color on hover */
+        }
+    
+        #settings-icon {
+            font-size: 30px;
+            cursor: pointer;
+            color: #2c3e50; /* Matching sidebar color */
+            transition: color 0.3s ease; /* Smooth hover effect */
+        }
+    
+        #settings-icon:hover {
+            color: #34495e; /* Darker color on hover */
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <header class="bg-light py-4 border-bottom">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-2 text-center text-md-left">
+                    <img src="{% static '/assets/logo 3.jpg' %}" alt="Sri Shakthi Logo" class="img-fluid rounded-circle" height="100" width="100">
+                </div>
+                <div class="col-md-8">
+                    <h1 class="h3 text-success font-weight-bold">Sri Shakthi Institute of Engineering and Technology</h1>
+                    <p class="text-muted mb-1">Approved by AICTE, New Delhi • Affiliated to Anna University, Chennai</p>
+                    <p class="text-muted">An Autonomous Institution</p>
+                </div>
+                <div class="col-md-2 text-right">
+                    <!-- Settings Icon -->
+                    <span id="settings-icon" class="text-success" onclick="openSidebar()">&#9881;</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation Links -->
+    <div class="text-center my-4">
+        <a href="{% url 'detection' %}" class="btn btn-success mx-2">Detection Report</a>
+    </div>
+
+    <!-- Sidebar -->
+    <div id="settingsSidebar" class="sidebar">
+        <a href="javascript:void(0)" class="close-btn" onclick="closeSidebar()">×</a>
+        <a href="{% url 'camera_id' %}">Add / Remove Camera's</a>
+        <!-- make the button for clear db when user click it, it wants to show pop up -->
+        <a href="" onclick="cleardb()">Clear DB</a>
+    </div>
+
+    <div class="container mt-5">
+        <div class="row" id="cameraGrid">
+            <!-- Camera grid will be dynamically loaded here -->
+        </div>
+    </div>
+
+    <div class="modal fade" id="cameraModal" tabindex="-1" aria-labelledby="cameraModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cameraModalLabel">Camera Feed</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeCamera()"></button>
+                </div>
+                <div class="modal-body">
+                    <img id="modalCameraContent" class="img-fluid" alt="Camera feed">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer Section -->
+    <footer class="bg-light py-4">
+        <div class="container text-center">
+            <p class="mb-0 text-muted mx-2">&copy; 2024 Sri Shakthi Institute of Engineering and Technology. All Rights Reserved.</p>
+            <div>
+                <a href="#" class="text-muted mx-2">Privacy Policy</a>
+                <a href="#" class="text-muted mx-2">Contact Us</a>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- Scripts -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script> <!-- Full jQuery for compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="{% static 'js/home.js' %}"></script>
+
+    <!-- Sidebar Toggle JavaScript -->
+    <script>
+        function openSidebar() {
+            document.getElementById("settingsSidebar").style.width = "250px";  // Set width for the sidebar
+        }
+
+        function closeSidebar() {
+            document.getElementById("settingsSidebar").style.width = "0";  // Set width to 0 to hide the sidebar
+        }
+    </script>
+
+<script>
+    function cleardb() {
+        var confirmMessage = prompt("Please type 'CONFIRM' to clear the database:");
+        if (confirmMessage && confirmMessage.toUpperCase() === "CONFIRM") {
+            fetch("{% url 'clear_database' %}", {
+                method: 'DELETE', // Use DELETE to match the expected method in your Django view
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}', // Include CSRF token for security
+                    'Content-Type': 'application/json' // Specify content type
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json(); // Parse the JSON from the response
+            })
+            .then(data => {
+                if (data.status == 'success') {
+                    alert("Deleted documents: " + data.message); // Adjust based on your response structure
+                } else {
+                    alert("Error: " + data.message); // Handle error messages
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // alert('An error occurred while clearing the database.');
+                alert("Deleted documents: " + data.message); 
+            });
+        } else {
+            alert("Invalid confirmation. Database not cleared.");
+        }
+    }
+</script>
+
+</body>
+</html>
